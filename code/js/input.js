@@ -4,7 +4,7 @@ const ACTION_KEYS = {
   right: ['ArrowRight', 'KeyD'],
   up:    ['ArrowUp', 'KeyW'],
   down:  ['ArrowDown', 'KeyS'],
-  shoot: ['KeyZ', 'KeyJ'],
+  shoot: ['KeyF'],
   jump:  ['KeyX', 'KeyK', 'Space'],
   start: ['Enter', 'KeyP'],
   mute:  ['KeyM'],

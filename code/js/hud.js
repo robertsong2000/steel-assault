@@ -50,7 +50,7 @@ export function drawTitle(ctx, t, konami) {
   ctx.fillRect(CFG.W / 2 - 260, 300, 520, 120);
   const lines = [
     '← → 移动    ↑ / ↓ 瞄准 / 蹲下',
-    'Z 射击      X / 空格 跳跃',
+    'F 射击      X / 空格 跳跃',
     'ENTER 开始 / 暂停    M 静音',
   ];
   lines.forEach((l, i) => text(ctx, l, CFG.W / 2, 320 + i * 26, { size: 18, color: '#cfe0ff', align: 'center' }));
