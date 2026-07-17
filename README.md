@@ -6,10 +6,24 @@
 
 ## 快速开始
 
+### 方式一：本地 Python 服务器
+
 ```bash
 cd code
 python3 -m http.server 8931
 # 浏览器打开 http://localhost:8931
+```
+
+### 方式二：Docker 部署
+
+```bash
+# 构建并运行
+docker-compose up -d
+# 浏览器打开 http://localhost:8080
+
+# 或直接 docker 构建运行
+docker build -t steel-assault .
+docker run -d -p 8080:80 --name steel-assault steel-assault
 ```
 
 ## 项目结构

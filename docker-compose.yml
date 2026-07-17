@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  steel-assault:
+    build: .
+    image: steel-assault:latest
+    container_name: steel-assault
+    ports:
+      - "8080:80"
+    restart: unless-stopped
