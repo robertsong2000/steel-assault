@@ -1,0 +1,5 @@
+.DS_Store
+*.log
+node_modules/
+.env
+code/assets/sprites/   # 可由 assets/raw 重新生成的中间产物
