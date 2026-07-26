@@ -42,6 +42,7 @@ export function physicsMove(ent, solids, oneways, dt) {
   }
   if (ent.vy >= 0) {
     for (const p of oneways) {
+      if (p.gone) continue;   // 塌陷平台：消失期间无碰撞
       if (prevBottom <= p.y + 2 && overlap(ent, p)) {
         ent.y = p.y - ent.h;
         ent.onGround = true;

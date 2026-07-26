@@ -132,6 +132,14 @@ export class AudioSys {
       case 'shoot':   this.tone(900, 0.07, 'square', 0.12, t, 300); this.noise(0.04, 0.06, 4000); break;
       case 'spread':  this.tone(620, 0.09, 'square', 0.12, t, 200); this.noise(0.05, 0.08, 3000); break;
       case 'eshoot':  this.tone(340, 0.09, 'sawtooth', 0.07, t, 180); break;
+      case 'laser':   this.tone(1500, 0.12, 'sawtooth', 0.11, t, 2600); this.tone(750, 0.09, 'square', 0.06, t, 1900); break;
+      case 'launch':  this.noise(0.25, 0.16, 900, 0.7, t, 2600); this.tone(170, 0.22, 'sawtooth', 0.1, t, 430); break;
+      case 'flame':   this.noise(0.1, 0.06, 700, 0.5, t, 320); break;
+      case 'boom':
+        this.noise(0.45, 0.34, 1400, 0.6, t, 90);
+        this.tone(70, 0.4, 'sine', 0.35, t, 32);
+        this.noise(0.25, 0.2, 400, 0.8, t + 0.06, 70);
+        break;
       case 'jump':    this.tone(260, 0.14, 'square', 0.1, t, 620); break;
       case 'hit':     this.tone(400, 0.35, 'sawtooth', 0.2, t, 60); this.noise(0.3, 0.2, 900, 0.8, t, 120); break;
       case 'explode': this.noise(0.28, 0.28, 1600, 0.6, t, 150); this.tone(140, 0.2, 'sine', 0.25, t, 45); break;
@@ -145,16 +153,22 @@ export class AudioSys {
       case 'turretDie': this.noise(0.2, 0.2, 2000, 0.7, t, 200); this.tone(220, 0.15, 'square', 0.12, t, 60); break;
       case 'select':  this.tone(880, 0.08, 'square', 0.12, t); break;
       case 'konami':  [66, 69, 73, 76, 78, 81, 85].forEach((m, i) => this.tone(mtof(m), 0.1, 'square', 0.13, t + i * 0.07)); break;
+      case 'roar':
+        this.tone(150, 0.55, 'sawtooth', 0.22, t, 48);
+        this.tone(98, 0.5, 'square', 0.14, t + 0.05, 40);
+        this.noise(0.45, 0.16, 500, 0.6, t, 70);
+        break;
     }
   }
 
-  // ---- BGM 步进音序器 ----
-  startBGM(mode) {
+  // ---- BGM 步进音序器（支持移调/变速） ----
+  startBGM(mode, opts = {}) {
     if (!this.ctx) return;
     this.stopBGM();
     this.mode = mode;
     this.step = 0;
-    this.bpm = mode === 'boss' ? 162 : 150;
+    this.transpose = opts.transpose || 0;
+    this.bpm = opts.bpm || (mode === 'boss' ? 162 : 150);
     this.stepDur = 60 / this.bpm / 4;
     this.nextTime = this.ctx.currentTime + 0.06;
     this.bgmTimer = setInterval(() => this.schedule(), 42);
@@ -187,7 +201,7 @@ export class AudioSys {
     if (s16 === 4 || s16 === 12) this.noiseHit(t, g);
     if (s16 % 2 === 0 || boss) this.hat(t, s16 % 4 === 2 ? 0.09 : 0.05, g);
     // 贝斯
-    const root = LEVEL_BASS_ROOT[bar] + 12;
+    const root = LEVEL_BASS_ROOT[bar] + 12 + (this.transpose || 0);
     const bassHit = boss ? true : s16 % 2 === 0;
     if (bassHit) {
       const oct = boss ? (s16 % 4 === 2 ? 12 : 0) : (s16 === 6 || s16 === 14 ? 12 : 0);
@@ -195,7 +209,7 @@ export class AudioSys {
     }
     // 主音
     const lead = boss ? BOSS_LEAD : LEVEL_LEAD;
-    const m = lead[step];
+    const m = lead[step] ? lead[step] + (this.transpose || 0) : 0;
     if (m) {
       this.tone(mtof(m), this.stepDur * (boss ? 0.95 : 1.7), 'square', 0.075, t, 0, g);
       this.tone(mtof(m) * 0.5, this.stepDur * 1.2, 'square', 0.04, t, 0, g); // 低八度加厚

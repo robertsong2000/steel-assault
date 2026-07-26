@@ -18,9 +18,13 @@ export class Boss {
     this.flash = 0;
     this.dead = false;   // 核心已毁，播放连锁爆炸
     this.done = false;   // 爆炸演完 → 胜利
+    this.clearText = '要塞已摧毁';
+    this.title = '装甲要塞';
     this.dyingT = 0;
     this.boomT = 0;
   }
+
+  get phase2() { return this.core.hp <= this.core.max / 2; }
 
   update(dt, world) {
     if (this.done) return;
@@ -48,38 +52,47 @@ export class Boss {
       return;
     }
 
-// 副炮：三连发瞄准弹
+    // 二阶段：核心半血后全面提速（一次怒吼提示）
+    if (this.phase2 && !this.enraged) {
+      this.enraged = true;
+      audio.sfx('roar');
+      world.shake(8);
+      particles.text(this.core.x - 40, this.core.y - 60, '狂暴!!', '#ff6a50');
+    }
+
+// 副炮：三连发瞄准弹（二阶段恢复三连发并提速）
     for (const c of this.cannons) {
       if (!c.alive) continue;
       const cx = c.x + 34, cy = c.y + c.h / 2;
       c.aim = Math.atan2(py - cy, px - cx);
       c.timer -= dt;
       if (c.timer <= 0 && c.burst === 0 && !player.dead) {
-        c.burst = 3;
+        c.burst = this.phase2 ? 3 : 2;
         c.burstT = 0;
-        c.timer = rand(2.2, 3.0);
+        c.timer = this.phase2 ? rand(2.0, 2.6) : rand(3.0, 4.0);
       }
       if (c.burst > 0) {
         c.burstT -= dt;
         if (c.burstT <= 0) {
-          enemies.fireAimed(cx + Math.cos(c.aim) * 30, cy + Math.sin(c.aim) * 30, px, py, CFG.EBULLET_SPEED + 40);
+          enemies.fireAimed(cx + Math.cos(c.aim) * 30, cy + Math.sin(c.aim) * 30, px, py, CFG.EBULLET_SPEED * (this.phase2 ? 1.25 : 1));
           audio.sfx('eshoot');
           c.burst--;
-          c.burstT = 0.22;
+          c.burstT = this.phase2 ? 0.24 : 0.34;
         }
       }
     }
 
-    // 核心：扇形弹幕
+    // 核心：扇形弹幕（二阶段 5 发、更频繁）
     this.fanTimer -= dt;
     if (this.fanTimer <= 0 && !player.dead) {
-      enemies.fireFan(this.core.x - 20, this.core.y, px, py, 5, 0.9);
+      if (this.phase2) enemies.fireFan(this.core.x - 20, this.core.y, px, py, 5, 0.9, CFG.EBULLET_SPEED * 1.2);
+      else enemies.fireFan(this.core.x - 20, this.core.y, px, py, 3, 0.7, CFG.EBULLET_SPEED);
       audio.sfx('spread');
       this.flash = 0.15;
-      this.fanTimer = rand(3.0, 3.8);
+      this.fanTimer = this.phase2 ? rand(2.6, 3.2) : rand(4.2, 5.2);
     }
 
-    // 出兵门
+    // 出兵门（二阶段更快）
     this.doorTimer -= dt;
     if (this.doorTimer <= 0) {
       if (enemies.runnerCount() < 3) {
@@ -88,7 +101,7 @@ export class Boss {
         r.x = this.wallX - 50;
         r.y = CFG.GROUND_Y - r.h;
       }
-      this.doorTimer = 5.0;
+      this.doorTimer = this.phase2 ? 4.2 : 6.5;
     }
   }
 

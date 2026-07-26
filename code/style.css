@@ -34,3 +34,41 @@ body {
   letter-spacing: 1px;
   opacity: 0.75;
 }
+
+/* ===================== 移动端虚拟按键 ===================== */
+body.touch { touch-action: none; user-select: none; -webkit-user-select: none; }
+body.touch #hint { display: none; }
+body.touch #wrap { padding: 4px; gap: 4px; }
+body.touch #game { width: min(100vw, 177.8vh); border-width: 1px; }
+
+#touchpad { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+
+.tbtn {
+  position: absolute;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: rgba(40, 44, 64, 0.45);
+  border: 2px solid rgba(160, 170, 200, 0.55);
+  color: rgba(235, 240, 255, 0.9);
+  font: 700 22px/58px monospace;
+  text-align: center;
+  pointer-events: auto;
+  touch-action: none;
+  backdrop-filter: blur(2px);
+}
+.tbtn.on { background: rgba(255, 184, 48, 0.55); border-color: #ffb830; color: #fff; }
+
+/* 左下十字键 */
+.dpad-l { left: 16px;  bottom: 84px; }
+.dpad-r { left: 152px; bottom: 84px; }
+.dpad-u { left: 84px;  bottom: 152px; }
+.dpad-d { left: 84px;  bottom: 16px; }
+
+/* 右下动作键 */
+.act-jump { right: 16px;  bottom: 24px; width: 74px; height: 74px; line-height: 68px; font-size: 24px; }
+.act-fire { right: 108px; bottom: 76px; width: 74px; height: 74px; line-height: 68px; font-size: 24px; background: rgba(120, 40, 30, 0.5); }
+
+/* 右上系统键 */
+.sys-pause { right: 16px; top: 12px; width: 46px; height: 46px; line-height: 42px; font-size: 18px; }
+.sys-cheat { right: 72px; top: 12px; width: 46px; height: 46px; line-height: 42px; font-size: 15px; background: rgba(40, 90, 50, 0.45); }

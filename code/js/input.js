@@ -16,12 +16,15 @@ export class Input {
   constructor() {
     this.down = new Set();
     this.pressed = new Set();
+    this.virtual = new Set();   // 触屏虚拟按键
     this.konamiIdx = 0;
     this.onKonami = null;
     window.addEventListener('keydown', (e) => {
       if (!e.repeat) {
         this.pressed.add(e.code);
         this.trackKonami(e.code);
+        // 简单金手指：标题画面直接按 9 获得 30 条命
+        if ((e.code === 'Digit9' || e.code === 'Numpad9') && this.onKonami) this.onKonami();
       }
       this.down.add(e.code);
       if (PREVENT.has(e.code)) e.preventDefault();
@@ -42,8 +45,24 @@ export class Input {
     }
   }
 
+  // 触屏虚拟按键（不走科乐美追踪）
+  virtualDown(code) {
+    if (!this.virtual.has(code)) {
+      this.pressed.add(code);
+      // 简单金手指：触屏按 30 同样生效
+      if ((code === 'Digit9' || code === 'Numpad9') && this.onKonami) this.onKonami();
+    }
+    this.virtual.add(code);
+  }
+  virtualUp(code) {
+    this.virtual.delete(code);
+  }
+  virtualClear() {
+    this.virtual.clear();
+  }
+
   isDown(action) {
-    return ACTION_KEYS[action].some((c) => this.down.has(c));
+    return ACTION_KEYS[action].some((c) => this.down.has(c) || this.virtual.has(c));
   }
   wasPressed(action) {
     return ACTION_KEYS[action].some((c) => this.pressed.has(c));
