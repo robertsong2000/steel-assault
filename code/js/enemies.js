@@ -495,9 +495,45 @@ export class EnemyManager {
         ctx.restore();
       } else if (b.kind === 'wave') {
         // 冰晶冲击波（贴地行进，跳起躲避）
-        rect(ctx, b.x - 14, b.y - 16, 28, 16, '#7fb8dd');
-        rect(ctx, b.x - 8, b.y - 26, 16, 12, '#a8d4ee');
-        rect(ctx, b.x - 3, b.y - 34, 7, 10, '#e8f4ff');
+        const img = Assets.get('icewave');
+        const pulse = 1 + Math.sin(time * 12 + b.x * 0.05) * 0.08;
+        if (img) {
+          ctx.save();
+          ctx.translate(b.x, b.y);
+          if (b.vx < 0) ctx.scale(-1, 1);
+          ctx.scale(pulse, pulse);
+          // 底部能量辉光
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.fillStyle = 'rgba(140,210,255,0.3)';
+          ctx.fillRect(-20, -8, 40, 8);
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.drawImage(img, -32, -56, 64, 56);
+          ctx.restore();
+        } else {
+          // 回退：锯齿冰刺（三角峰 + 高光）
+          ctx.save();
+          if (b.vx < 0) { ctx.translate(b.x * 2, 0); ctx.scale(-1, 1); }
+          const spikes = [[-16, 18], [-8, 30], [0, 40], [8, 26], [15, 16]];
+          for (const [sx, sh] of spikes) {
+            ctx.fillStyle = '#7fb8dd';
+            ctx.beginPath();
+            ctx.moveTo(b.x + sx - 6, b.y);
+            ctx.lineTo(b.x + sx + 6, b.y);
+            ctx.lineTo(b.x + sx, b.y - sh * pulse);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#dff0ff';
+            ctx.beginPath();
+            ctx.moveTo(b.x + sx - 2, b.y - sh * 0.4);
+            ctx.lineTo(b.x + sx + 2, b.y - sh * 0.4);
+            ctx.lineTo(b.x + sx, b.y - sh * pulse);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.fillStyle = 'rgba(140,210,255,0.35)';
+          ctx.fillRect(b.x - 20, b.y - 6, 40, 6);
+          ctx.restore();
+        }
       } else {
         rect(ctx, b.x - 4, b.y - 4, 8, 8, '#ff5a3c');
         rect(ctx, b.x - 2, b.y - 2, 4, 4, '#ffd0a0');

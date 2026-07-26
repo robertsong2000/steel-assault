@@ -419,23 +419,6 @@ class Game {
         }
       }
     }
-    // 子弹抵消：玩家子弹可击毁敌弹（冲击波除外），+10 分
-    const CANCELABLE = new Set([undefined, 'snow', 'ice', 'fire', 'missile']);
-    for (const b of this.bullets) {
-      if (b.remove) continue;
-      for (const eb of this.enemies.bullets) {
-        if (eb.remove || !CANCELABLE.has(eb.kind)) continue;
-        const rr = b.r + (eb.r || 4) + 2;
-        const dx = b.x - eb.x, dy = b.y - eb.y;
-        if (dx * dx + dy * dy < rr * rr) {
-          eb.remove = true;
-          this.particles.sparks(eb.x, eb.y, 4, '#ffe0a0');
-          this.addScore(10, eb.x, eb.y);
-          if (!b.pierce && !b.flame) { b.remove = true; }
-          break;
-        }
-      }
-    }
     // 子弹 vs 地形（火焰可越过地形，短射程自生自灭）
     for (const b of this.bullets) {
       if (b.remove || b.flame) continue;

@@ -35,6 +35,8 @@ const FILES = {
   // 沙虫 / 熔岩巨兽
   sandworm: 'assets/img/sandworm.png',
   lavabeast: 'assets/img/lavabeast.png',
+  // 冰晶冲击波
+  icewave: 'assets/img/icewave.png',
   // 武器子弹 / 特效帧
   bullet_laser: 'assets/img/bullet_laser.png',
   bullet_missile: 'assets/img/bullet_missile.png',

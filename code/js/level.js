@@ -102,9 +102,7 @@ export const LEVELS = [
       { x: 3600, y: 300, w: 140, h: 14, kind: 'metal' },
       { x: 3900, y: 250, w: 130, h: 14, kind: 'metal' },
       { x: 4270, y: 370, w: 90,  h: 14, kind: 'metal' },
-      { x: 4550, y: 320, w: 150, h: 14, kind: 'metal' },
-      { x: 4800, y: 260, w: 150, h: 14, kind: 'metal' },
-      { x: 5050, y: 320, w: 150, h: 14, kind: 'metal' },
+      // Boss 竞技场无高台：与雪怪平地一对一
     ],
     turrets: [
       { x: 1960, y: 390 },
