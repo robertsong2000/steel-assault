@@ -52,6 +52,22 @@ LEVELS.forEach((lv, i) => {
       err(`L${i} quicksand@${p.x} has solid beneath`);
     }
   }
+  // 平台可达性：跳跃极限 ~143px，每个高台必须有 140px 内的踏脚点（实体岩石也算）
+  const MAXJ = 140;
+  const GY = CFG.GROUND_Y;
+  const surfaces = [...lv.solids, ...lv.oneways];
+  for (const p of lv.oneways) {
+    if (p.kind === 'quicksand') continue;
+    if (GY - p.y <= MAXJ) continue;   // 地面直跳可达
+    const hasStep = surfaces.some((q) => q !== p && Math.abs(q.y - p.y) <= MAXJ &&
+      !(q.x > p.x + p.w + 200 || p.x > q.x + q.w + 200));
+    if (!hasStep) err(`L${i} platform@${p.x},y=${p.y} unreachable (needs ${GY - p.y}px jump)`);
+  }
+  // 移动平台最高点也必须可达
+  for (const p of lv.oneways.filter((p) => p.move)) {
+    const topY = p.y - p.move.range;
+    if (GY - topY > MAXJ) err(`L${i} mover@${p.x} top=${topY} unreachable (needs ${GY - topY}px jump)`);
+  }
   console.log(
     `L${i} ${lv.name} boss=${lv.boss} mul=${lv.ebulletMul || 1} ` +
     `enemies=${fixed.length}+${(lv.sandworms || []).length} triggers=${lv.triggers.length} OK`
