@@ -84,6 +84,7 @@ assets/audio/      Kenney CC0 jingles
 - 背景层（远山/丛林/雪山/雪松）：品红键控转透明后裁切；天空层直接缩放至 960x540
 - Boss 精灵（雪怪）：品红键控 + 内容包围盒裁切
 - 重新生成某张图：替换 `assets/raw/<name>.png` 后重跑对应处理命令即可
+- 最终加载格式：`assets/img/` 全部为 WebP（q85，徽章 64x64），PNG 处理产物压缩后替换并同步 `js/assets.js` 路径
 
 ## 技术
 

@@ -1,6 +1,6 @@
 // ===================== 主循环：状态机 / 镜头 / 碰撞调度 =====================
 import { CFG, SCORE, WEAPON_LABEL, DIFFS, LEVEL_MUSIC } from './config.js';
-import { clamp, rand, overlap, circleRect, rect } from './utils.js';
+import { clamp, rand, overlap, circleRect, rect, loadNum, saveVal } from './utils.js';
 import { Input } from './input.js';
 import { setupTouch } from './touch.js';
 import { AudioSys } from './audio.js';
@@ -39,7 +39,7 @@ class Game {
     this.playTime = 0;
     this.camX = 0;
     this.score = 0;
-    this.hi = +(localStorage.getItem('steel_assault_hi') || 0);
+    this.hi = loadNum('steel_assault_hi', 0);
     this.shakeT = 0;
     this.hitStop = 0;   // 打击顿帧（秒）
     this.konami = false;
@@ -48,7 +48,7 @@ class Game {
     this.bullets = [];
     this.levelIdx = 0;
     this.unlocked = LEVELS.length - 1;  // 关卡全部直接开放，无需解锁
-    this.difficulty = Math.min(2, Math.max(0, +(localStorage.getItem('steel_assault_diff') ?? 1)));
+    this.difficulty = clamp(Math.round(loadNum('steel_assault_diff', 1)), 0, DIFFS.length - 1);
     this.stats = { kills: 0, shots: 0, hits: 0, deaths: 0 };
 
     this.input.onKonami = () => {
@@ -74,12 +74,14 @@ class Game {
     requestAnimationFrame((t) => this.loop(t));
   }
 
-  start() {
+  start(keepRun = false) {
     this.audio.ensure();
     setLevel(this.levelIdx);
-    this.score = 0;
-    this.stats = { kills: 0, shots: 0, hits: 0, deaths: 0 };
-    this.world.stats = this.stats;
+    if (!keepRun) {   // 连关时保留分数与战绩，整场战役累计计分
+      this.score = 0;
+      this.stats = { kills: 0, shots: 0, hits: 0, deaths: 0 };
+      this.world.stats = this.stats;
+    }
     this.playTime = 0;
     this.camX = 0;
     this.boss = null;
@@ -108,7 +110,7 @@ class Game {
     if (x !== undefined) this.particles.text(x, y - 10, `+${n}`);
     if (this.score > this.hi) {
       this.hi = this.score;
-      localStorage.setItem('steel_assault_hi', String(this.hi));
+      saveVal('steel_assault_hi', this.hi);
     }
   }
 
@@ -141,8 +143,14 @@ class Game {
 
   respawn() {
     const sx = clamp(this.player.lastSafe.x, this.camX + 30, this.camX + CFG.W - 200);
-    const top = groundTopAt(sx + CFG.PLAYER_W / 2);
-    this.player.respawn(sx, (top ?? CFG.GROUND_Y) - CFG.PLAYER_H);
+    // 安全点扫描：跳过已塌落的平台和流沙，附近找不到安全地面才回退默认地面
+    let top = null, rx = sx;
+    for (const dx of [0, -48, 48, -96, 96, -144, 144]) {
+      const x = clamp(sx + dx, this.camX + 30, this.camX + CFG.W - 200);
+      const t = groundTopAt(x + CFG.PLAYER_W / 2, { safe: true });
+      if (t !== null) { top = t; rx = x; break; }
+    }
+    this.player.respawn(rx, (top ?? CFG.GROUND_Y) - CFG.PLAYER_H);
   }
 
   gameOver() {
@@ -187,7 +195,7 @@ class Game {
         // ↑/↓ 切换难度
         if (this.input.wasPressed('up') || this.input.wasPressed('down')) {
           this.difficulty = (this.difficulty + (this.input.wasPressed('down') ? 1 : 2)) % DIFFS.length;
-          localStorage.setItem('steel_assault_diff', String(this.difficulty));
+          saveVal('steel_assault_diff', this.difficulty);
           this.audio.ensure(); this.audio.sfx('select');
         }
         if (this.input.wasPressed('start')) { this.audio.sfx('select'); this.start(); }
@@ -269,7 +277,7 @@ class Game {
           this.audio.sfx('select');
           if (this.levelIdx < LEVELS.length - 1) {
             this.levelIdx++;
-            this.start();  // 连关：直接进入下一关
+            this.start(true);  // 连关：直接进入下一关（分数/战绩累计）
           } else {
             this.state = 'title'; this.konami = false;
           }

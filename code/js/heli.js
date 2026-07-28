@@ -3,12 +3,15 @@ import { CFG } from './config.js';
 import { rand, clamp } from './utils.js';
 import { rect } from './utils.js';
 import { Assets, drawSprite } from './assets.js';
+import { ebSpeed } from './enemies.js';
+import { BaseBoss } from './bossbase.js';
 
 const G = CFG.GROUND_Y;
 const ARENA_LEFT = () => CFG.ARENA_WALL_X - 680;
 
-export class HeliBoss {
+export class HeliBoss extends BaseBoss {
   constructor() {
+    super();
     this.w = 130;
     this.h = 56;
     this.x = CFG.ARENA_WALL_X - 200;
@@ -18,7 +21,6 @@ export class HeliBoss {
     this.facing = -1;
     // core = 尾旋翼（弱点，全额伤害）；机身命中减半
     this.core = { x: this.x + 110, y: this.y + 20, r: 18, hp: 120, max: 120 };
-    this.cannons = [];
     this.clearText = '直升机已击落';
     this.title = '武装直升机';
     this.state = 'enter';   // enter / strafe / hover / sweep
@@ -27,20 +29,35 @@ export class HeliBoss {
     this.dir = -1;          // 穿梭方向
     this.sub = 0;           // 连发/投弹计数
     this.sweepA = 0;
-    this.flash = 0;
     this.rotorT = 0;
-    this.dead = false;
-    this.done = false;
-    this.dyingT = 0;
-    this.boomT = 0;
     this.spin = 0;          // 坠毁旋转
+    this.killScore = 10000;
+    this.dyingBoomInterval = 0.16;
+    this.dyingShake = 5;
   }
 
-  get phase2() { return this.core.hp <= this.core.max / 2; }
+  dyingBoomPos() {
+    return { x: this.x + rand(0, this.w), y: this.y + rand(0, this.h), s: rand(0.7, 1.2) };
+  }
+
+  // 失控旋转下坠
+  dyingTick(dt, world) {
+    this.spin += dt * 7;
+    this.vy = Math.min(this.vy + CFG.GRAV * 0.6 * dt, 700);
+    this.x += this.vx * 0.3 * dt;
+    this.y += this.vy * dt;
+  }
+
+  // 触地提前终爆
+  dyingFinished() { return this.y > G - 40 || this.dyingT > 2.6; }
+
+  finalBoomPos() { return { x: this.x + this.w / 2, y: Math.min(this.y, G - 20) }; }
+
+  scorePos() { return { x: this.x + this.w / 2, y: this.y + 20 }; }
 
   update(dt, world) {
     if (this.done) return;
-    const { player, enemies, particles, audio } = world;
+    const { player, enemies, audio } = world;
     const px = player.x + CFG.PLAYER_W / 2;
     const py = player.y + player.h / 2;
     this.flash = Math.max(0, this.flash - dt);
@@ -48,24 +65,7 @@ export class HeliBoss {
 
     if (this.dead) {
       // 失控旋转下坠 → 触地爆炸
-      this.dyingT += dt;
-      this.spin += dt * 7;
-      this.vy = Math.min(this.vy + CFG.GRAV * 0.6 * dt, 700);
-      this.x += this.vx * 0.3 * dt;
-      this.y += this.vy * dt;
-      this.boomT -= dt;
-      if (this.boomT <= 0) {
-        this.boomT = 0.16;
-        particles.explosion(this.x + rand(0, this.w), this.y + rand(0, this.h), rand(0.7, 1.2));
-        audio.sfx('explode');
-        world.shake(5);
-      }
-      if (this.y > G - 40 || this.dyingT > 2.6) {
-        this.done = true;
-        particles.bigExplosion(this.x + this.w / 2, Math.min(this.y, G - 20));
-        audio.sfx('bigExplode');
-        world.shake(18);
-      }
+      this.updateDying(dt, world);
       return;
     }
 
@@ -100,7 +100,7 @@ export class HeliBoss {
         if (this.timer <= 0 && !player.dead) {
           const gx = this.x + this.w / 2 + this.facing * 30;
           const gy = this.y + this.h - 6;
-          enemies.fireAimed(gx, gy, px, py, CFG.EBULLET_SPEED + 40);
+          enemies.fireAimed(gx, gy, px, py, ebSpeed(CFG.EBULLET_SPEED + 40));
           audio.sfx('eshoot');
           this.timer = (this.phase2 ? 0.5 : 0.7);
         }
@@ -138,7 +138,8 @@ export class HeliBoss {
           const base = Math.atan2(py - gy, px - gx);
           for (const off of [-0.06, 0.06]) {
             const a = base + Math.sin(this.sweepA) * 0.7 + off;
-            enemies.bullets.push({ x: gx, y: gy, vx: Math.cos(a) * 270, vy: Math.sin(a) * 270, r: 4 });
+            const sp = ebSpeed(270);
+            enemies.bullets.push({ x: gx, y: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 4 });
           }
           audio.sfx('shoot');
           this.sub--;
@@ -176,7 +177,7 @@ export class HeliBoss {
     this.timer = 0.5;
   }
 
-  // 命中检测：尾旋翼 'core'（全额）/ 机身 'body'（减半）
+  // 命中检测：尾旋翼 'core'（全额）/ 机身 'body'（减半），damage 用基类实现（killScore=10000）
   hitTest(b) {
     if (this.dead) return null;
     const c = this.core;
@@ -184,18 +185,6 @@ export class HeliBoss {
     if (dx * dx + dy * dy <= (c.r + 4) * (c.r + 4)) return 'core';
     if (b.x > this.x && b.x < this.x + this.w && b.y > this.y && b.y < this.y + this.h) return 'body';
     return null;
-  }
-
-  damage(part, dmg, world) {
-    if (this.dead) return;
-    this.core.hp -= part === 'core' ? dmg : dmg * 0.5;
-    this.flash = 0.08;
-    world.audio.sfx('bossHit');
-    if (this.core.hp <= 0) {
-      this.dead = true;
-      this.dyingT = 0;
-      world.addScore(10000, this.x + this.w / 2, this.y + 20);
-    }
   }
 
   draw(ctx, time) {

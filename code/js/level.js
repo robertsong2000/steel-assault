@@ -379,7 +379,12 @@ export const LEVEL = {};
 
 export function setLevel(i) {
   const def = LEVELS[i];
+  // 先清空上一关残留字段（lasers/winds/sandworms/ebulletMul 等可选键），防止跨关污染
+  for (const k in LEVEL) delete LEVEL[k];
   Object.assign(LEVEL, def);
+  // 深拷贝可变地形数组：塌陷/流沙/移动平台的运行时状态（gone/sink/baseY 等）不得跨关或跨重开残留
+  LEVEL.solids = structuredClone(def.solids);
+  LEVEL.oneways = structuredClone(def.oneways);
   // Boss / 敌人 / 主循环运行时读取 CFG 中的关卡边界，同步写回
   CFG.LEVEL_W = def.width;
   CFG.BOSS_TRIGGER_X = def.bossTriggerX;
@@ -388,9 +393,11 @@ export function setLevel(i) {
 setLevel(0);
 
 // 求某 x 处的落脚面高度（用于刷兵/重生），无地面返回 null
-export function groundTopAt(x) {
+// safe=true 时跳过已塌落的塌陷平台和流沙（重生/刷兵安全点用）
+export function groundTopAt(x, { safe = false } = {}) {
   let best = null;
   for (const s of [...LEVEL.solids, ...LEVEL.oneways]) {
+    if (safe && (s.gone || s.kind === 'quicksand')) continue;
     if (x >= s.x && x <= s.x + s.w) {
       if (best === null || s.y < best) best = s.y;
     }

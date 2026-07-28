@@ -4,6 +4,10 @@ import { rand, chance, clamp, overlap, physicsMove, rect } from './utils.js';
 import { LEVEL, groundTopAt } from './level.js';
 import { Assets, drawSprite } from './assets.js';
 
+// 直射敌弹速度统一收口：基础速度 × 关卡弹速倍率 × 难度倍率（所有直射弹都必须经过这里；
+// 弹道解算弹 vx=dx/T（雪球/齐射/火球/投弹）乘倍率会破坏落点解算，不在此列）
+export const ebSpeed = (base) => base * (LEVEL.ebulletMul || 1) * (CFG.DIFF_MUL || 1);
+
 export class EnemyManager {
   constructor() {
     this.list = [];
@@ -22,7 +26,7 @@ export class EnemyManager {
     for (let i = 0; i < n; i++) {
       let x = dir < 0 ? camX + CFG.W + 40 + i * 56 : camX - 40 - i * 56;
       x = Math.min(x, CFG.ARENA_WALL_X - 30); // 防止刷进 Boss 墙里
-      const top = groundTopAt(x) ?? CFG.GROUND_Y;
+      const top = groundTopAt(x, { safe: true }) ?? CFG.GROUND_Y;
       this.list.push({
         type: 'runner', x, y: top - 42, w: 24, h: 42,
         vx: 0, vy: 0, dir, hp: 1, runT: rand(0, 1), onGround: false,
@@ -76,7 +80,7 @@ export class EnemyManager {
     for (let i = 0; i < n; i++) {
       let x = dir < 0 ? camX + CFG.W + 40 + i * 64 : camX - 40 - i * 64;
       x = Math.min(x, CFG.ARENA_WALL_X - 30);
-      const top = groundTopAt(x) ?? CFG.GROUND_Y;
+      const top = groundTopAt(x, { safe: true }) ?? CFG.GROUND_Y;
       this.list.push({
         type: 'jumper', x, y: top - 42, w: 24, h: 42,
         vx: 0, vy: 0, dir, hp: 1, runT: rand(0, 1), jumpT: rand(0.3, 0.9), onGround: false,
@@ -89,7 +93,7 @@ export class EnemyManager {
     for (let i = 0; i < n; i++) {
       let x = dir < 0 ? camX + CFG.W + 40 + i * 48 : camX - 40 - i * 48;
       x = Math.min(x, CFG.ARENA_WALL_X - 30);
-      const top = groundTopAt(x) ?? CFG.GROUND_Y;
+      const top = groundTopAt(x, { safe: true }) ?? CFG.GROUND_Y;
       this.list.push({
         type: 'roller', x, y: top - 22, w: 22, h: 22,
         vx: 0, vy: 0, hp: 1, fuse: -1, rollT: 0, onGround: false,
@@ -135,12 +139,12 @@ export class EnemyManager {
   }
 
   // ---- 子弹 ----
-  fireAimed(x, y, tx, ty, speed = CFG.EBULLET_SPEED * (LEVEL.ebulletMul || 1) * (CFG.DIFF_MUL || 1), spreadAng = 0) {
+  fireAimed(x, y, tx, ty, speed = ebSpeed(CFG.EBULLET_SPEED), spreadAng = 0) {
     let a = Math.atan2(ty - y, tx - x) + spreadAng;
     this.bullets.push({ x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, r: 4 });
   }
 
-  fireFan(x, y, tx, ty, count, fanAngle, speed = CFG.EBULLET_SPEED * (LEVEL.ebulletMul || 1) * (CFG.DIFF_MUL || 1) + 20) {
+  fireFan(x, y, tx, ty, count, fanAngle, speed = ebSpeed(CFG.EBULLET_SPEED) + 20) {
     const base = Math.atan2(ty - y, tx - x);
     for (let i = 0; i < count; i++) {
       const a = base + (count === 1 ? 0 : -fanAngle / 2 + (fanAngle / (count - 1)) * i);
@@ -214,7 +218,7 @@ export class EnemyManager {
             else if (e.state === 'aim') {
               e.aim = Math.atan2(py - (e.y + 10), px - (e.x + 13));
               if (e.timer <= 0) {
-                this.fireAimed(e.x + 13, e.y + 10, px, py, CFG.EBULLET_SPEED + 30);
+                this.fireAimed(e.x + 13, e.y + 10, px, py, ebSpeed(CFG.EBULLET_SPEED + 30));
                 world.audio.sfx('eshoot');
                 e.state = 'hide';
                 e.timer = rand(1.0, 1.8);

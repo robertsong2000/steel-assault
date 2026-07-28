@@ -3,9 +3,12 @@ import { CFG } from './config.js';
 import { rand, clamp } from './utils.js';
 import { rect } from './utils.js';
 import { Assets, drawSprite } from './assets.js';
+import { ebSpeed } from './enemies.js';
+import { BaseBoss } from './bossbase.js';
 
-export class Boss {
+export class Boss extends BaseBoss {
   constructor() {
+    super();
     this.wallX = CFG.ARENA_WALL_X;
     // 核心与副炮凸出在墙面左侧，否则子弹会先撞墙体被吞掉
     this.core = { x: this.wallX - 30, y: 285, r: 26, hp: 90, max: 90 };
@@ -15,16 +18,15 @@ export class Boss {
     ];
     this.fanTimer = 3.4;
     this.doorTimer = 4.0;
-    this.flash = 0;
-    this.dead = false;   // 核心已毁，播放连锁爆炸
-    this.done = false;   // 爆炸演完 → 胜利
     this.clearText = '要塞已摧毁';
     this.title = '装甲要塞';
-    this.dyingT = 0;
-    this.boomT = 0;
+    this.dyingBoomInterval = 0.09;
   }
 
-  get phase2() { return this.core.hp <= this.core.max / 2; }
+  // 连锁爆炸火花撒在墙面上
+  dyingBoomPos() {
+    return { x: this.wallX + rand(0, 150), y: rand(60, CFG.GROUND_Y), s: rand(0.8, 1.6) };
+  }
 
   update(dt, world) {
     if (this.done) return;
@@ -35,20 +37,7 @@ export class Boss {
 
     if (this.dead) {
       // 连锁爆炸演出
-      this.dyingT += dt;
-      this.boomT -= dt;
-      if (this.boomT <= 0) {
-        this.boomT = 0.09;
-        particles.explosion(this.wallX + rand(0, 150), rand(60, CFG.GROUND_Y), rand(0.8, 1.6));
-        audio.sfx('explode');
-        world.shake(6);
-      }
-      if (this.dyingT > 1.8) {
-        this.done = true;
-        particles.bigExplosion(this.core.x, this.core.y);
-        audio.sfx('bigExplode');
-        world.shake(18);
-      }
+      this.updateDying(dt, world);
       return;
     }
 
@@ -74,7 +63,7 @@ export class Boss {
       if (c.burst > 0) {
         c.burstT -= dt;
         if (c.burstT <= 0) {
-          enemies.fireAimed(cx + Math.cos(c.aim) * 30, cy + Math.sin(c.aim) * 30, px, py, CFG.EBULLET_SPEED * (this.phase2 ? 1.25 : 1));
+          enemies.fireAimed(cx + Math.cos(c.aim) * 30, cy + Math.sin(c.aim) * 30, px, py, ebSpeed(CFG.EBULLET_SPEED * (this.phase2 ? 1.25 : 1)));
           audio.sfx('eshoot');
           c.burst--;
           c.burstT = this.phase2 ? 0.24 : 0.34;
@@ -85,8 +74,8 @@ export class Boss {
     // 核心：扇形弹幕（二阶段 5 发、更频繁）
     this.fanTimer -= dt;
     if (this.fanTimer <= 0 && !player.dead) {
-      if (this.phase2) enemies.fireFan(this.core.x - 20, this.core.y, px, py, 5, 0.9, CFG.EBULLET_SPEED * 1.2);
-      else enemies.fireFan(this.core.x - 20, this.core.y, px, py, 3, 0.7, CFG.EBULLET_SPEED);
+      if (this.phase2) enemies.fireFan(this.core.x - 20, this.core.y, px, py, 5, 0.9, ebSpeed(CFG.EBULLET_SPEED * 1.2));
+      else enemies.fireFan(this.core.x - 20, this.core.y, px, py, 3, 0.7, ebSpeed(CFG.EBULLET_SPEED));
       audio.sfx('spread');
       this.flash = 0.15;
       this.fanTimer = this.phase2 ? rand(2.6, 3.2) : rand(4.2, 5.2);

@@ -3,23 +3,29 @@ import { CFG } from './config.js';
 import { rand, clamp } from './utils.js';
 import { rect } from './utils.js';
 import { Assets, drawSprite } from './assets.js';
+import { LEVEL } from './level.js';
+import { BaseBoss } from './bossbase.js';
 
 const G = CFG.GROUND_Y;
-const POOL_X0 = 4820;   // 岩浆池范围（竞技场）
-const POOL_X1 = 5280;
+const POOL_W = 460;        // 岩浆池宽
+const POOL_WALL_GAP = 30;  // 池右缘距 Boss 墙左缘
 
-export class LavaBeast {
+export class LavaBeast extends BaseBoss {
   constructor() {
+    super();
     this.w = 110;
     this.h = 118;
-    this.spots = [4900, 5050, 5200];   // 三个浮出点
+    // 岩浆池几何从关卡数据派生：池右缘 = 墙左缘 - 30，池宽 460
+    const wallX = LEVEL.wallX ?? CFG.ARENA_WALL_X;
+    this.poolX1 = wallX - POOL_WALL_GAP;
+    this.poolX0 = this.poolX1 - POOL_W;
+    this.spots = [this.poolX0 + 80, this.poolX0 + 230, this.poolX0 + 380];   // 三个浮出点（均布池内）
     this.spot = 1;
     this.x = this.spots[1] - this.w / 2;
     this.y = G + 60;                    // 潜没在岩浆下
     this.facing = -1;
     // core = 头部（浮出时才是弱点）
     this.core = { x: this.x + 40, y: G + 120, r: 30, hp: 140, max: 140 };
-    this.cannons = [];
     this.clearText = '巨兽已讨伐';
     this.title = '熔岩巨兽';
     this.state = 'hidden';   // hidden / rise / attack / submerge
@@ -27,14 +33,22 @@ export class LavaBeast {
     this.volleyT = 0;
     this.geysers = [];       // 二阶段岩浆喷泉 {x, warn, active}
     this.geyserT = 2.5;
-    this.flash = 0;
-    this.dead = false;
-    this.done = false;
-    this.dyingT = 0;
-    this.boomT = 0;
+    this.killScore = 12000;
+    this.dyingBoomInterval = 0.12;
+    this.dyingDuration = 2.0;
   }
 
-  get phase2() { return this.core.hp <= this.core.max / 2; }
+  dyingBoomPos() {
+    return { x: this.x + rand(0, this.w), y: this.y + rand(0, this.h), s: rand(0.9, 1.5) };
+  }
+
+  // 缓缓沉入岩浆
+  dyingTick(dt, world) { this.y += 16 * dt; }
+
+  finalBoomPos() { return { x: this.x + this.w / 2, y: G - 30 }; }
+
+  scorePos() { return { x: this.x + this.w / 2, y: this.y + 30 }; }
+
   get vulnerable() { return this.state === 'rise' || this.state === 'attack' || this.state === 'submerge'; }
 
   update(dt, world) {
@@ -45,23 +59,17 @@ export class LavaBeast {
     this.flash = Math.max(0, this.flash - dt);
 
     if (this.dead) {
-      this.dyingT += dt;
-      this.boomT -= dt;
-      if (this.boomT <= 0) {
-        this.boomT = 0.12;
-        particles.explosion(this.x + rand(0, this.w), this.y + rand(0, this.h), rand(0.9, 1.5));
-        audio.sfx('explode');
-        world.shake(6);
-      }
-      // 缓缓沉入岩浆
-      this.y += 16 * dt;
-      if (this.dyingT > 2.0) {
-        this.done = true;
-        particles.bigExplosion(this.x + this.w / 2, G - 30);
-        audio.sfx('bigExplode');
-        world.shake(18);
-      }
+      this.updateDying(dt, world);
       return;
+    }
+
+    // 岩浆池致死：玩家脚底落在池面附近且横坐标在池范围内（尊重无敌/防护罩）
+    if (!player.dead && player.inv <= 0 && player.shieldT <= 0) {
+      const pcx = player.x + player.w / 2;
+      const feet = player.y + player.h;
+      if (pcx > this.poolX0 && pcx < this.poolX1 && feet > G - 10 && feet < G + 40) {
+        world.killPlayer();
+      }
     }
 
     this.facing = px < this.x + this.w / 2 ? -1 : 1;
@@ -121,7 +129,7 @@ export class LavaBeast {
         if (this.phase2) {
           this.geyserT -= dt;
           if (this.geyserT <= 0) {
-            const gx = clamp(px + rand(-120, 120), POOL_X0 - 300, POOL_X0 - 60);
+            const gx = clamp(px + rand(-120, 120), this.poolX0 - 300, this.poolX0 - 60);
             this.geysers.push({ x: gx, warn: 0.7, active: 0.45, fired: false });
             this.geyserT = rand(1.6, 2.2);
           }
@@ -168,7 +176,7 @@ export class LavaBeast {
     if (!this.vulnerable) this.core.y = G + 200;   // 潜没时弱点沉入浆下（追踪弹打不到）
   }
 
-  // 命中检测：只有浮出时才能被击中
+  // 命中检测：只有浮出时才能被击中，damage 用基类实现（killScore=12000）
   hitTest(b) {
     if (this.dead || !this.vulnerable) return null;
     const c = this.core;
@@ -178,18 +186,6 @@ export class LavaBeast {
     return null;
   }
 
-  damage(part, dmg, world) {
-    if (this.dead) return;
-    this.core.hp -= part === 'core' ? dmg : dmg * 0.5;
-    this.flash = 0.08;
-    world.audio.sfx('bossHit');
-    if (this.core.hp <= 0) {
-      this.dead = true;
-      this.dyingT = 0;
-      world.addScore(12000, this.x + this.w / 2, this.y + 30);
-    }
-  }
-
   draw(ctx, time) {
     // 岩浆池（始终绘制，Boss 的"家"）
     const grad = ctx.createLinearGradient(0, G - 8, 0, G + 40);
@@ -197,17 +193,17 @@ export class LavaBeast {
     grad.addColorStop(0.5, '#e8552a');
     grad.addColorStop(1, '#8c1f08');
     ctx.fillStyle = grad;
-    ctx.fillRect(POOL_X0, G - 6, POOL_X1 - POOL_X0, 46);
+    ctx.fillRect(this.poolX0, G - 6, this.poolX1 - this.poolX0, 46);
     // 岩浆表面气泡
     ctx.fillStyle = '#ffc46b';
     for (let i = 0; i < 8; i++) {
-      const bx = POOL_X0 + 20 + ((i * 57 + time * 26) % (POOL_X1 - POOL_X0 - 40));
+      const bx = this.poolX0 + 20 + ((i * 57 + time * 26) % (this.poolX1 - this.poolX0 - 40));
       const by = G - 2 + Math.sin(time * 3 + i) * 2;
       ctx.fillRect(bx, by, 6, 3);
     }
     // 池边岩石
-    rect(ctx, POOL_X0 - 16, G - 10, 16, 50, '#3c3026');
-    rect(ctx, POOL_X1, G - 10, 16, 50, '#3c3026');
+    rect(ctx, this.poolX0 - 16, G - 10, 16, 50, '#3c3026');
+    rect(ctx, this.poolX1, G - 10, 16, 50, '#3c3026');
 
     // 喷泉预警柱
     for (const gz of this.geysers) {

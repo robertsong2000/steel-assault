@@ -3,11 +3,14 @@ import { CFG } from './config.js';
 import { rand, clamp } from './utils.js';
 import { rect } from './utils.js';
 import { Assets, drawSprite } from './assets.js';
+import { ebSpeed } from './enemies.js';
+import { BaseBoss } from './bossbase.js';
 
 const G = CFG.GROUND_Y;
 
-export class YetiBoss {
+export class YetiBoss extends BaseBoss {
   constructor() {
+    super();
     this.w = 84;
     this.h = 96;
     this.x = CFG.ARENA_WALL_X - 220;
@@ -17,21 +20,18 @@ export class YetiBoss {
     this.facing = -1;
     // core 兼作弱点判定 / 追踪弹目标 / HUD 血条数据源
     this.core = { x: this.x + 42, y: this.y + 44, r: 40, hp: 110, max: 110 };
-    this.cannons = [];
     this.state = 'idle';   // idle / jump / throw / slam
     this.clearText = '雪怪已讨伐';
     this.title = '雪怪 Yeti';
     this.timer = 1.4;
     this.throwN = 0;
-    this.flash = 0;
     this.roared = false;   // 二阶段怒吼只放一次
-    this.dead = false;
-    this.done = false;
-    this.dyingT = 0;
-    this.boomT = 0;
+    this.dyingBoomInterval = 0.11;
   }
 
-  get phase2() { return this.core.hp <= this.core.max / 2; }
+  dyingBoomPos() {
+    return { x: this.x + rand(-10, this.w + 10), y: this.y + rand(0, this.h), s: rand(0.8, 1.4) };
+  }
 
   update(dt, world) {
     if (this.done) return;
@@ -42,20 +42,7 @@ export class YetiBoss {
 
     if (this.dead) {
       // 连锁爆炸演出
-      this.dyingT += dt;
-      this.boomT -= dt;
-      if (this.boomT <= 0) {
-        this.boomT = 0.11;
-        particles.explosion(this.x + rand(-10, this.w + 10), this.y + rand(0, this.h), rand(0.8, 1.4));
-        audio.sfx('explode');
-        world.shake(6);
-      }
-      if (this.dyingT > 1.8) {
-        this.done = true;
-        particles.bigExplosion(this.core.x, this.core.y);
-        audio.sfx('bigExplode');
-        world.shake(18);
-      }
+      this.updateDying(dt, world);
       return;
     }
 
@@ -94,7 +81,7 @@ export class YetiBoss {
           this.y = G - this.h;
           this.vx = 0;
           this.vy = 0;
-          const wv = this.phase2 ? 320 : 260;
+          const wv = ebSpeed(this.phase2 ? 320 : 260);
           enemies.bullets.push({ x: this.x + 10, y: G - 6, vx: -wv, vy: 0, r: 12, kind: 'wave', life: 2.4 });
           enemies.bullets.push({ x: this.x + this.w - 10, y: G - 6, vx: wv, vy: 0, r: 12, kind: 'wave', life: 2.4 });
           audio.sfx('boom');

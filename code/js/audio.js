@@ -182,6 +182,12 @@ export class AudioSys {
 
   schedule() {
     if (!this.ctx) return;
+    // 后台标签页 setInterval 被节流：回前台时最多补 4 步，落后的直接跳过，避免音符叠放爆音
+    if (this.nextTime < this.ctx.currentTime - this.stepDur * 4) {
+      const skipped = Math.max(0, Math.floor((this.ctx.currentTime - this.nextTime) / this.stepDur) - 4);
+      this.step = (this.step + skipped) % 128;
+      this.nextTime += skipped * this.stepDur;
+    }
     while (this.nextTime < this.ctx.currentTime + 0.16) {
       this.playStep(this.step, this.nextTime);
       this.step = (this.step + 1) % 128;

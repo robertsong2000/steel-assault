@@ -3,13 +3,16 @@ import { CFG } from './config.js';
 import { rand, clamp, overlap } from './utils.js';
 import { rect } from './utils.js';
 import { Assets, drawSprite } from './assets.js';
+import { ebSpeed } from './enemies.js';
+import { BaseBoss } from './bossbase.js';
 
 const G = CFG.GROUND_Y;
 const LASER_Y = G - 38;      // 激光束中心高度（站立必中，蹲下/跳起可躲）
 const ARENA_LEFT_PAD = 660;  // 机甲活动范围（Boss 墙左侧）
 
-export class MechBoss {
+export class MechBoss extends BaseBoss {
   constructor() {
+    super();
     this.w = 116;
     this.h = 150;
     this.x = CFG.ARENA_WALL_X - 280;
@@ -17,22 +20,25 @@ export class MechBoss {
     this.facing = -1;
     // core = 头部驾驶舱（弱点，全额伤害）；身体命中减半
     this.core = { x: this.x + 40, y: this.y + 22, r: 24, hp: 130, max: 130 };
-    this.cannons = [];
     this.clearText = '机甲已摧毁';
     this.title = '巨型机甲';
     this.state = 'idle';   // idle / stomp / salvo / laser
     this.timer = 1.6;
     this.sub = 0;          // 齐射剩余弹数
     this.laserPhase = 0;   // 0 无 / 1 预警 / 2 发射
-    this.flash = 0;
     this.walkT = 0;
-    this.dead = false;
-    this.done = false;
-    this.dyingT = 0;
-    this.boomT = 0;
+    this.killScore = 8000;
+    this.dyingBoomInterval = 0.1;
+    this.dyingDuration = 2.0;
   }
 
-  get phase2() { return this.core.hp <= this.core.max / 2; }
+  dyingBoomPos() {
+    return { x: this.x + rand(0, this.w), y: this.y + rand(0, this.h), s: rand(0.9, 1.6) };
+  }
+
+  finalBoomPos() { return { x: this.x + this.w / 2, y: this.y + this.h / 2 }; }
+
+  scorePos() { return { x: this.x + this.w / 2, y: this.y + 40 }; }
 
   update(dt, world) {
     if (this.done) return;
@@ -42,20 +48,7 @@ export class MechBoss {
     this.flash = Math.max(0, this.flash - dt);
 
     if (this.dead) {
-      this.dyingT += dt;
-      this.boomT -= dt;
-      if (this.boomT <= 0) {
-        this.boomT = 0.1;
-        particles.explosion(this.x + rand(0, this.w), this.y + rand(0, this.h), rand(0.9, 1.6));
-        audio.sfx('explode');
-        world.shake(6);
-      }
-      if (this.dyingT > 2.0) {
-        this.done = true;
-        particles.bigExplosion(this.x + this.w / 2, this.y + this.h / 2);
-        audio.sfx('bigExplode');
-        world.shake(18);
-      }
+      this.updateDying(dt, world);
       return;
     }
 
@@ -80,7 +73,7 @@ export class MechBoss {
       case 'stomp': {
         this.timer -= dt;
         if (this.timer <= 0) {
-          const wv = this.phase2 ? 340 : 280;
+          const wv = ebSpeed(this.phase2 ? 340 : 280);
           enemies.bullets.push({ x: this.x + 16, y: G - 6, vx: -wv, vy: 0, r: 12, kind: 'wave', life: 2.4 });
           enemies.bullets.push({ x: this.x + this.w - 16, y: G - 6, vx: wv, vy: 0, r: 12, kind: 'wave', life: 2.4 });
           audio.sfx('boom');
@@ -141,7 +134,7 @@ export class MechBoss {
     this.x = clamp(this.x, CFG.ARENA_WALL_X - ARENA_LEFT_PAD, CFG.ARENA_WALL_X - this.w - 16);
   }
 
-  // 命中检测：头部 'core'（全额）/ 身体 'body'（减半）
+  // 命中检测：头部 'core'（全额）/ 身体 'body'（减半），damage 用基类实现（killScore=8000）
   hitTest(b) {
     if (this.dead) return null;
     const c = this.core;
@@ -149,18 +142,6 @@ export class MechBoss {
     if (dx * dx + dy * dy <= (c.r + 4) * (c.r + 4)) return 'core';
     if (b.x > this.x && b.x < this.x + this.w && b.y > this.y + 40 && b.y < this.y + this.h) return 'body';
     return null;
-  }
-
-  damage(part, dmg, world) {
-    if (this.dead) return;
-    this.core.hp -= part === 'core' ? dmg : dmg * 0.5;
-    this.flash = 0.08;
-    world.audio.sfx('bossHit');
-    if (this.core.hp <= 0) {
-      this.dead = true;
-      this.dyingT = 0;
-      world.addScore(8000, this.x + this.w / 2, this.y + 40);
-    }
   }
 
   draw(ctx, time) {

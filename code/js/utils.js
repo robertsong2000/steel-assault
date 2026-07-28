@@ -4,6 +4,19 @@ export const lerp = (a, b, t) => a + (b - a) * t;
 export const rand = (a, b) => a + Math.random() * (b - a);
 export const randInt = (a, b) => Math.floor(rand(a, b + 1));
 export const chance = (p) => Math.random() < p;
+
+// localStorage 安全读写：隐私模式抛异常 / 数据被写坏（NaN）时回退默认值
+export function loadNum(key, fallback = 0) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    const v = +raw;
+    return Number.isFinite(v) ? v : fallback;
+  } catch { return fallback; }
+}
+export function saveVal(key, val) {
+  try { localStorage.setItem(key, String(val)); } catch { /* 隐私模式等环境忽略写入失败 */ }
+}
 export const overlap = (a, b) =>
   a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 export const pointInRect = (x, y, r) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;

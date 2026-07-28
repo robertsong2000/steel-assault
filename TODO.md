@@ -41,6 +41,18 @@
 - ⬜ 第 6~8 关（规划：后半程，难度继续递增）
 - ⬜ 新敌人类型（扩展）：掷弹兵变种、滚雪球陷阱、巡逻机器人
 
+## P1.5 — 稳定性加固（2026-07-28，详见 ANALYSIS.md）✅
+
+- ✅ 修复 setLevel 跨关字段残留（顶层 delete + 地形数组 structuredClone 深拷贝）
+- ✅ localStorage 安全读写收口（loadNum/saveVal，NaN/隐私模式兜底）
+- ✅ 连关累计计分（start(keepRun)）
+- ✅ 敌弹速度统一收口 ebSpeed（难度/关卡倍率覆盖全部直射弹，含 5 个 Boss）
+- ✅ 素材瘦身：PNG→WebP 12MB→1.3MB；assets/raw 移出 git 与 Docker 镜像
+- ✅ BaseBoss 基类抽象（消 5 Boss 复制粘贴 ~150 行）
+- ✅ 熔岩巨兽几何随关卡数据派生 + 岩浆池致死
+- ✅ 重生/刷兵安全点（跳过塌落平台与流沙）
+- ✅ BGM 后台标签页 catch-up 上限（防爆音）
+
 ## P2 — 系统与体验
 
 - ✅ B 防护罩道具（2026-07-25：金星徽章掉落，10 秒无敌泡 + HUD 倒计时）
