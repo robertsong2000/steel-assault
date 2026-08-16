@@ -1,0 +1,16 @@
+{
+  "name": "steel-assault",
+  "private": true,
+  "type": "module",
+  "description": "STEEL ASSAULT — Contra-style run-and-gun web game",
+  "scripts": {
+    "test": "node --test code/tests/*.test.js",
+    "test:levels": "node code/tools/check-levels.mjs",
+    "check": "npm test && npm run test:levels",
+    "check:syntax": "node --check code/js/*.js && node --check code/tools/*.mjs",
+    "todo:next": "node tools/pick-todo.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

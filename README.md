@@ -41,3 +41,11 @@ code/
 ```
 
 更详细的玩法、操作、素材管线说明见 [`code/README.md`](code/README.md)。
+
+## 测试 / 回归护栏
+
+```bash
+npm run check   # 单元测试 + 关卡数据校验
+```
+
+定时自动啃 TODO（TDD + draft PR）见 [`AUTOMATION.md`](AUTOMATION.md)。
