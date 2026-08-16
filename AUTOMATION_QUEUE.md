@@ -64,7 +64,7 @@
 - **tests**: 变种行为单测 + `npm run check`
 
 ### A5 — 新机关：滚雪球陷阱（第 2 关）
-- **status**: open
+- **status**: done
 - **priority**: P1
 - **source**: TODO.md → 新敌人类型（扩展）
 - **scope**: `enemies.js` 或 `level.js` 动态 + L2 triggers

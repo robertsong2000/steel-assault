@@ -8,6 +8,19 @@ import { Assets, drawSprite } from './assets.js';
 // 弹道解算弹 vx=dx/T（雪球/齐射/火球/投弹）乘倍率会破坏落点解算，不在此列）
 export const ebSpeed = (base) => base * (LEVEL.ebulletMul || 1) * (CFG.DIFF_MUL || 1);
 
+// 击杀掉落分数（damage() 查表；roller 走引爆特例不在此列）
+export const ENEMY_SCORE = {
+  runner: 100, sniper: 200, turret: 300, drone: 150,
+  grenadier: 250, shielder: 300, flyer: 150, jumper: 100,
+  para: 200, worm: 300, snowball: 180,
+};
+
+// 滚雪球陷阱伤害边界：实体 AABB 即判定盒；已死亡玩家不计
+export function snowballHitsPlayer(e, player) {
+  if (!e || e.type !== 'snowball' || !player || player.dead) return false;
+  return overlap(e, player);
+}
+
 export class EnemyManager {
   constructor() {
     this.list = [];
@@ -84,6 +97,20 @@ export class EnemyManager {
       this.list.push({
         type: 'jumper', x, y: top - 42, w: 24, h: 42,
         vx: 0, vy: 0, dir, hp: 1, runT: rand(0, 1), jumpT: rand(0.3, 0.9), onGround: false,
+      });
+    }
+  }
+
+  // 滚雪球陷阱：沿固定方向滚动、边滚边变大，可跳过或打爆（无 AOE）
+  spawnSnowballs(n, dir, camX) {
+    for (let i = 0; i < n; i++) {
+      let x = dir < 0 ? camX + CFG.W + 40 + i * 72 : camX - 40 - i * 72;
+      x = Math.min(x, CFG.ARENA_WALL_X - 40);
+      const top = groundTopAt(x, { safe: true }) ?? CFG.GROUND_Y;
+      const size = 28;
+      this.list.push({
+        type: 'snowball', x: x - size / 2, y: top - size, w: size, h: size,
+        vx: 0, vy: 0, dir, hp: 2, rollT: 0, maxGrow: 48, onGround: false,
       });
     }
   }
@@ -169,8 +196,7 @@ export class EnemyManager {
     const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
     world.particles.explosion(cx, cy, 1);
     world.audio.sfx('explode');
-    const scoreMap = { runner: 100, sniper: 200, turret: 300, drone: 150, grenadier: 250, shielder: 300, flyer: 150, jumper: 100, para: 200, worm: 300 };
-    const sc = scoreMap[e.type] || 100;
+    const sc = ENEMY_SCORE[e.type] || 100;
     world.addScore(sc, cx, cy);
     if (e.type === 'drone' && e.carry) this.spawnPowerup(cx, cy, e.carry);
     e.remove = true;
@@ -301,6 +327,24 @@ export class EnemyManager {
           physicsMove(e, LEVEL.solids, LEVEL.oneways, dt);
           e.runT += dt;
           if (e.x < camX - 140 || e.y > CFG.H + 100) e.remove = true;
+          break;
+        }
+        case 'snowball': {
+          // 固定方向滚动（不追玩家）；边滚边胀大，判定盒同步变大
+          e.vx = e.dir * 180;
+          e.vy = Math.min(e.vy + CFG.GRAV * dt, CFG.MAX_FALL);
+          physicsMove(e, LEVEL.solids, LEVEL.oneways, dt);
+          e.rollT += dt;
+          if (e.w < e.maxGrow) {
+            const next = Math.min(e.maxGrow, e.w + 12 * dt);
+            const cx = e.x + e.w / 2;
+            const bottom = e.y + e.h;
+            e.w = next;
+            e.h = next;
+            e.x = cx - e.w / 2;
+            e.y = bottom - e.h;
+          }
+          if (e.x < camX - 160 || e.x > camX + CFG.W + 220 || e.y > CFG.H + 100) e.remove = true;
           break;
         }
         case 'roller': {
@@ -442,6 +486,7 @@ export class EnemyManager {
       else if (e.type === 'shielder') drawShielder(ctx, e);
       else if (e.type === 'flyer') drawFlyer(ctx, e, time);
       else if (e.type === 'jumper') drawJumper(ctx, e);
+      else if (e.type === 'snowball') drawSnowball(ctx, e);
       else if (e.type === 'roller') drawRoller(ctx, e, time);
       else if (e.type === 'para') drawPara(ctx, e, time);
       else if (e.type === 'worm') drawWorm(ctx, e, time);
@@ -709,6 +754,33 @@ function drawJumper(ctx, e) {
   rect(ctx, cx - 8, e.y + 10, 16, 18, '#7a4ec2');
   rect(ctx, cx - 6, e.y - 2, 12, 12, '#f0c090');
   rect(ctx, cx - 7, e.y - 4, 14, 6, '#3a2056');
+}
+
+// 滚雪球陷阱：手绘回退（白球 + 冰蓝阴影，随滚动旋转）
+function drawSnowball(ctx, e) {
+  const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
+  const r = e.w / 2;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(e.rollT * 4);
+  ctx.fillStyle = '#eef7ff';
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#c5dcec';
+  ctx.beginPath();
+  ctx.arc(r * 0.22, r * 0.22, r * 0.55, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(-r * 0.28, -r * 0.32, r * 0.28, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#9bb8cc';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, r - 1, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 // 自爆滚雷：刺球 + 引信闪烁
