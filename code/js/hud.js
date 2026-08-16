@@ -3,6 +3,7 @@ import { CFG, WEAPONS } from './config.js';
 import { rect, text, bigText } from './utils.js';
 import { drawBackground, LEVEL } from './level.js';
 import { Assets } from './assets.js';
+import { SETTINGS_ROWS, keyLabel } from './settings.js';
 
 const pad = (n, w = 6) => String(Math.floor(n)).padStart(w, '0');
 
@@ -75,10 +76,12 @@ export function drawTitle(ctx, t, konami, sel) {
   // 操作说明（半透明底板保证可读性）
   ctx.fillStyle = 'rgba(10,5,20,0.55)';
   ctx.fillRect(CFG.W / 2 - 260, 300, 520, 120);
+  const shootKey = keyLabel(sel?.settings?.shoot || 'KeyF');
+  const jumpKey = keyLabel(sel?.settings?.jump || 'KeyX');
   const lines = [
     '← → 移动    ↑ / ↓ 瞄准 / 蹲下    （手柄摇杆/十字键）',
-    'F 射击      X / 空格 跳跃    （手柄 A 跳 / X·RT 射）',
-    'ENTER / START 开始暂停    M 静音',
+    `${shootKey} 射击      ${jumpKey} / 空格 跳跃    （手柄 A 跳 / X·RT 射）`,
+    'ENTER / START 开始暂停    M 静音    O / ESC 设置',
     '按 9 = 30 条命（金手指）',
   ];
   lines.forEach((l, i) => text(ctx, l, CFG.W / 2, 320 + i * 26, { size: 18, color: '#cfe0ff', align: 'center' }));
@@ -113,6 +116,42 @@ export function drawTitle(ctx, t, konami, sel) {
   text(ctx, '无人机补给：M机枪 S散弹 L激光 G榴弹 H导弹 F火焰', CFG.W / 2, 498, { size: 14, color: '#ffe95a', align: 'center' });
 }
 
+export function drawSettings(ctx, game) {
+  const fromTitle = game?.settingsFrom === 'title';
+  if (fromTitle) drawBackground(ctx, (game.time || 0) * 60, game.time || 0);
+  ctx.fillStyle = fromTitle ? 'rgba(8,6,16,0.72)' : 'rgba(0,0,10,0.72)';
+  ctx.fillRect(0, 0, CFG.W, CFG.H);
+  bigText(ctx, '设置', CFG.W / 2, 90, 44, '#ffb830');
+
+  const s = game?.settings || { volume: 0.45, shoot: 'KeyF', jump: 'KeyX' };
+  const row = game?.settingsRow || 0;
+  const rebind = game?.settingsRebind;
+  const volPct = Math.round(s.volume * 100);
+  const labels = {
+    volume: ['音量', `${volPct}%`],
+    shoot: ['射击', rebind === 'shoot' ? '按下新按键…' : keyLabel(s.shoot)],
+    jump: ['跳跃', rebind === 'jump' ? '按下新按键…' : keyLabel(s.jump)],
+  };
+
+  SETTINGS_ROWS.forEach((id, i) => {
+    const cur = i === row;
+    const [name, value] = labels[id];
+    const y = 180 + i * 52;
+    const color = cur ? '#ffe95a' : '#cfe0ff';
+    text(ctx, `${cur ? '▶ ' : '  '}${name}`, CFG.W / 2 - 180, y, { size: 22, color });
+    text(ctx, value, CFG.W / 2 + 40, y, { size: 22, color });
+    if (id === 'volume') {
+      rect(ctx, CFG.W / 2 + 40, y + 28, 200, 8, 'rgba(255,255,255,0.15)');
+      rect(ctx, CFG.W / 2 + 40, y + 28, 200 * s.volume, 8, '#6aff8a');
+    }
+  });
+
+  const hint = rebind
+    ? '按下字母/数字/空格    ESC 取消'
+    : '↑ ↓ 选择    ← → 音量    ENTER 改键    ESC 返回';
+  text(ctx, hint, CFG.W / 2, 430, { size: 16, color: '#ffffff', align: 'center' });
+}
+
 export function drawPause(ctx, game) {
   ctx.fillStyle = 'rgba(0,0,10,0.55)';
   ctx.fillRect(0, 0, CFG.W, CFG.H);
@@ -124,6 +163,7 @@ export function drawPause(ctx, game) {
       CFG.W / 2, CFG.H / 2 + 26, { size: 16, color: '#cfe0ff', align: 'center' });
   }
   bigText(ctx, '按 ENTER 继续', CFG.W / 2, CFG.H / 2 + 70, 22, '#fff');
+  text(ctx, 'O / ESC 设置', CFG.W / 2, CFG.H / 2 + 108, { size: 16, color: '#8ad0ff', align: 'center' });
 }
 
 export function drawGameOver(ctx, score, hi) {

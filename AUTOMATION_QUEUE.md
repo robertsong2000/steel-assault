@@ -29,7 +29,7 @@
   - `npm run check` 全绿
 
 ### A2 — 设置界面（音量、按键自定义）
-- **status**: open
+- **status**: done
 - **priority**: P2
 - **source**: TODO.md → P2 设置界面
 - **scope**: `hud.js` / `audio.js` / `input.js` / `main.js` / `utils.js`（localStorage）

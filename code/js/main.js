@@ -10,8 +10,9 @@ import { EnemyManager, shieldBlocksBullet } from './enemies.js';
 import { Player } from './player.js';
 import { Boss } from './boss.js';
 import { BOSS_CLASSES } from './bosses.js';
-import { drawHUD, drawTitle, drawPause, drawGameOver, drawVictory, drawStageBanner } from './hud.js';
+import { drawHUD, drawTitle, drawPause, drawGameOver, drawVictory, drawStageBanner, drawSettings } from './hud.js';
 import { Assets } from './assets.js';
+import { loadSettings, saveSettings, bindAction, applyBindings, SETTINGS_ROWS, nudgeVolume } from './settings.js';
 
 const STEP = 1 / 60;
 
@@ -24,6 +25,12 @@ class Game {
     this.input = new Input();
     setupTouch(this.input);   // 触屏设备启用虚拟按键
     this.audio = new AudioSys();
+    this.settings = loadSettings();
+    this.audio.setMasterVolume(this.settings.volume);
+    applyBindings(this.input, this.settings);
+    this.settingsRow = 0;
+    this.settingsRebind = null;
+    this.settingsFrom = 'title';
     this.particles = new Particles();
     this.enemies = new EnemyManager();
     this.player = new Player();
@@ -160,6 +167,60 @@ class Game {
     this.audio.playJingle('victory');
   }
 
+  openSettings(from) {
+    this.settingsFrom = from;
+    this.settingsRow = 0;
+    this.settingsRebind = null;
+    this.state = 'settings';
+    if (!this.audio.ctx) this.audio.ensure();
+    this.audio.sfx('select');
+  }
+
+  updateSettings() {
+    if (this.settingsRebind) {
+      for (const code of this.input.pressed) {
+        if (code === 'Escape') {
+          this.settingsRebind = null;
+          this.audio.sfx('select');
+          break;
+        }
+        const next = bindAction(this.settings, this.settingsRebind, code);
+        if (next[this.settingsRebind] === code) {
+          this.settings = next;
+          applyBindings(this.input, this.settings);
+          this.settingsRebind = null;
+          this.audio.sfx('select');
+        }
+      }
+      return;
+    }
+    if (this.input.wasPressed('settings')) {
+      this.state = this.settingsFrom;
+      this.audio.sfx('select');
+      return;
+    }
+    if (this.input.wasPressed('up')) {
+      this.settingsRow = (this.settingsRow + SETTINGS_ROWS.length - 1) % SETTINGS_ROWS.length;
+      this.audio.sfx('select');
+    }
+    if (this.input.wasPressed('down')) {
+      this.settingsRow = (this.settingsRow + 1) % SETTINGS_ROWS.length;
+      this.audio.sfx('select');
+    }
+    const row = SETTINGS_ROWS[this.settingsRow];
+    if (row === 'volume') {
+      if (this.input.wasPressed('left') || this.input.wasPressed('right')) {
+        const dir = this.input.wasPressed('right') ? 1 : -1;
+        this.settings = saveSettings({ volume: nudgeVolume(this.settings.volume, dir) });
+        this.audio.setMasterVolume(this.settings.volume);
+        this.audio.sfx('select');
+      }
+    } else if (this.input.wasPressed('start')) {
+      this.settingsRebind = row;
+      this.audio.sfx('select');
+    }
+  }
+
   // ---------------- 更新 ----------------
   update(dt) {
     this.input.pollGamepad();
@@ -176,6 +237,10 @@ class Game {
 
     switch (this.state) {
       case 'title': {
+        if (this.input.wasPressed('settings')) {
+          this.openSettings('title');
+          break;
+        }
         // ←/→ 或数字键选关（只能选已解锁的）
         if (this.input.wasPressed('left') && this.levelIdx > 0) {
           this.levelIdx--; this.audio.ensure(); this.audio.sfx('select');
@@ -255,11 +320,19 @@ class Game {
         break;
 
       case 'paused':
+        if (this.input.wasPressed('settings')) {
+          this.openSettings('paused');
+          break;
+        }
         if (this.input.wasPressed('start')) {
           this.state = 'playing';
           this.audio.ctx?.resume();    // 恢复音频
           this.audio.sfx('select');
         }
+        break;
+
+      case 'settings':
+        this.updateSettings();
         break;
 
       case 'gameover':
@@ -500,7 +573,12 @@ class Game {
       drawTitle(ctx, this.time, this.konami, {
         levels: LEVELS, levelIdx: this.levelIdx, unlocked: this.unlocked,
         diffName: DIFFS[this.difficulty].name,
+        settings: this.settings,
       });
+      return;
+    }
+    if (this.state === 'settings' && this.settingsFrom === 'title') {
+      drawSettings(ctx, this);
       return;
     }
 
@@ -523,6 +601,7 @@ class Game {
     drawHUD(ctx, this);
     if (this.state === 'playing' && this.stageBanner > 0) drawStageBanner(ctx, LEVEL.name, this.stageBanner);
     if (this.state === 'paused') drawPause(ctx, this);
+    else if (this.state === 'settings') drawSettings(ctx, this);
     else if (this.state === 'gameover') drawGameOver(ctx, this.score, this.hi);
     else if (this.state === 'victory') drawVictory(ctx, this.score, this.playTime, this.levelIdx < LEVELS.length - 1, this.boss?.clearText || '要塞已摧毁', this.stats);
   }
