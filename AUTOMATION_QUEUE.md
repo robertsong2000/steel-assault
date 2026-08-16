@@ -90,10 +90,16 @@
 - **source**: TODO.md → 第 6~8 关
 
 ### A8 — 第 8 关
-- **status**: open
+- **status**: done
 - **priority**: P1
 - **depends**: A7
 - **source**: TODO.md → 第 6~8 关
+- **scope**: `level.js` LEVELS 追加 + `overlord.js` + `BOSS_CLASSES` + `LEVEL_MUSIC` + `check-levels`
+- **acceptance**:
+  - 新关可从标题选中
+  - Boss 可击败；关卡校验全绿
+  - 更新「exposes exactly 7 campaign levels」等硬编码断言为 8
+- **tests**: 关卡隔离 / Boss 注册 / `npm run check`
 
 ---
 

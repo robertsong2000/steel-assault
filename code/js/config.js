@@ -67,4 +67,5 @@ export const LEVEL_MUSIC = [
   { transpose: -4, bpm: 158 },  // 遗迹 紧张
   { transpose: 3, bpm: 162 },   // 火山 急促
   { transpose: -3, bpm: 166 },  // 雷暴废城 低沉急促
+  { transpose: 5, bpm: 170 },   // 核心要塞 终章高压
 ];

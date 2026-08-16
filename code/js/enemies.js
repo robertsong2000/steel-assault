@@ -682,6 +682,30 @@ export class EnemyManager {
         ctx.beginPath();
         ctx.arc(b.x - 2, b.y - 2, 3.5, 0, Math.PI * 2);
         ctx.fill();
+      } else if (b.kind === 'beam') {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        const ang = Math.atan2(b.vy, b.vx);
+        ctx.translate(b.x, b.y);
+        ctx.rotate(ang);
+        ctx.fillStyle = 'rgba(232,160,255,0.35)';
+        ctx.fillRect(-18, -5, 36, 10);
+        ctx.fillStyle = '#fff4ff';
+        ctx.fillRect(-16, -2, 32, 4);
+        ctx.restore();
+      } else if (b.kind === 'shard') {
+        ctx.fillStyle = '#8a3cb8';
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y - 7);
+        ctx.lineTo(b.x + 6, b.y);
+        ctx.lineTo(b.x, b.y + 7);
+        ctx.lineTo(b.x - 6, b.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#e8a0ff';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
       } else if (b.kind === 'wave') {
         // 冰晶冲击波（贴地行进，跳起躲避）
         const img = Assets.get('icewave');

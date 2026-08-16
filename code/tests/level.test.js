@@ -4,14 +4,17 @@ import { LEVELS, LEVEL, setLevel, groundTopAt } from '../js/level.js';
 import { CFG } from '../js/config.js';
 
 describe('setLevel isolation', () => {
-  it('exposes exactly 7 campaign levels', () => {
-    assert.equal(LEVELS.length, 7);
+  it('exposes exactly 8 campaign levels', () => {
+    assert.equal(LEVELS.length, 8);
     assert.match(LEVELS[5].name, /第6关/);
     assert.equal(LEVELS[5].boss, 'titan');
     assert.equal(LEVELS[5].theme, 'volcano');
     assert.match(LEVELS[6].name, /第7关/);
     assert.equal(LEVELS[6].boss, 'warden');
     assert.equal(LEVELS[6].theme, 'storm');
+    assert.match(LEVELS[7].name, /第8关/);
+    assert.equal(LEVELS[7].boss, 'overlord');
+    assert.equal(LEVELS[7].theme, 'citadel');
   });
 
   it('clears optional keys when switching from desert back to jungle', () => {
@@ -83,6 +86,33 @@ describe('setLevel isolation', () => {
   it('syncs CFG boundaries from the storm level def', () => {
     setLevel(6);
     const lv = LEVELS[6];
+    assert.equal(CFG.LEVEL_W, lv.width);
+    assert.equal(CFG.ARENA_WALL_X, lv.wallX);
+    assert.equal(CFG.BOSS_TRIGGER_X, lv.bossTriggerX);
+  });
+
+  it('isolates citadel (L8) keys when switching back to jungle', () => {
+    setLevel(7);
+    assert.equal(LEVEL.theme, 'citadel');
+    assert.equal(LEVEL.boss, 'overlord');
+    assert.ok(LEVEL.ebulletMul > 1.25, 'L8 should press harder than storm 1.25');
+    assert.ok(LEVEL.width >= 5600);
+    assert.ok(LEVEL.triggers.length > 0, 'L8 must not be an empty stage');
+    assert.ok((LEVEL.lasers || []).length > 0, 'citadel should have energy gates');
+    assert.ok((LEVEL.oneways || []).some((p) => p.move), 'citadel should have floating lifts');
+
+    setLevel(0);
+    assert.equal(LEVEL.theme, 'jungle');
+    assert.equal(LEVEL.boss, 'fortress');
+    assert.equal(LEVEL.ebulletMul, undefined);
+    assert.equal(LEVEL.lasers, undefined);
+    assert.equal(LEVEL.winds, undefined);
+    assert.equal(LEVEL.sandworms, undefined);
+  });
+
+  it('syncs CFG boundaries from the citadel level def', () => {
+    setLevel(7);
+    const lv = LEVELS[7];
     assert.equal(CFG.LEVEL_W, lv.width);
     assert.equal(CFG.ARENA_WALL_X, lv.wallX);
     assert.equal(CFG.BOSS_TRIGGER_X, lv.bossTriggerX);
