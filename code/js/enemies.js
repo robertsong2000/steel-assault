@@ -12,12 +12,18 @@ export const ebSpeed = (base) => base * (LEVEL.ebulletMul || 1) * (CFG.DIFF_MUL 
 export const ENEMY_SCORE = {
   runner: 100, sniper: 200, turret: 300, drone: 150,
   grenadier: 250, bomber: 350, shielder: 300, flyer: 150,
-  jumper: 100, para: 200, worm: 300, patrol: 220,
+  jumper: 100, para: 200, worm: 300, patrol: 220, snowball: 180,
 };
 
 // 盾牌兵正面挡弹（火焰除外）。抽成纯函数便于回归单测。
 export function shieldBlocksBullet(e, b) {
   return e.type === 'shielder' && !b.flame && Math.sign(b.vx || e.facing) === -e.facing;
+}
+
+// 滚雪球陷阱伤害边界：实体 AABB 即判定盒；已死亡玩家不计
+export function snowballHitsPlayer(e, player) {
+  if (!e || e.type !== 'snowball' || !player || player.dead) return false;
+  return overlap(e, player);
 }
 
 export class EnemyManager {
@@ -104,6 +110,20 @@ export class EnemyManager {
       this.list.push({
         type: 'jumper', x, y: top - 42, w: 24, h: 42,
         vx: 0, vy: 0, dir, hp: 1, runT: rand(0, 1), jumpT: rand(0.3, 0.9), onGround: false,
+      });
+    }
+  }
+
+  // 滚雪球陷阱：沿固定方向滚动、边滚边变大，可跳过或打爆（无 AOE）
+  spawnSnowballs(n, dir, camX) {
+    for (let i = 0; i < n; i++) {
+      let x = dir < 0 ? camX + CFG.W + 40 + i * 72 : camX - 40 - i * 72;
+      x = Math.min(x, CFG.ARENA_WALL_X - 40);
+      const top = groundTopAt(x, { safe: true }) ?? CFG.GROUND_Y;
+      const size = 28;
+      this.list.push({
+        type: 'snowball', x: x - size / 2, y: top - size, w: size, h: size,
+        vx: 0, vy: 0, dir, hp: 2, rollT: 0, maxGrow: 48, onGround: false,
       });
     }
   }
@@ -376,6 +396,24 @@ export class EnemyManager {
           if (e.x < camX - 140 || e.y > CFG.H + 100) e.remove = true;
           break;
         }
+        case 'snowball': {
+          // 固定方向滚动（不追玩家）；边滚边胀大，判定盒同步变大
+          e.vx = e.dir * 180;
+          e.vy = Math.min(e.vy + CFG.GRAV * dt, CFG.MAX_FALL);
+          physicsMove(e, LEVEL.solids, LEVEL.oneways, dt);
+          e.rollT += dt;
+          if (e.w < e.maxGrow) {
+            const next = Math.min(e.maxGrow, e.w + 12 * dt);
+            const cx = e.x + e.w / 2;
+            const bottom = e.y + e.h;
+            e.w = next;
+            e.h = next;
+            e.x = cx - e.w / 2;
+            e.y = bottom - e.h;
+          }
+          if (e.x < camX - 160 || e.x > camX + CFG.W + 220 || e.y > CFG.H + 100) e.remove = true;
+          break;
+        }
         case 'roller': {
           if (e.fuse >= 0) {
             // 引爆倒计时
@@ -560,6 +598,7 @@ export class EnemyManager {
       else if (e.type === 'shielder') drawShielder(ctx, e);
       else if (e.type === 'flyer') drawFlyer(ctx, e, time);
       else if (e.type === 'jumper') drawJumper(ctx, e);
+      else if (e.type === 'snowball') drawSnowball(ctx, e);
       else if (e.type === 'roller') drawRoller(ctx, e, time);
       else if (e.type === 'para') drawPara(ctx, e, time);
       else if (e.type === 'worm') drawWorm(ctx, e, time);
@@ -870,6 +909,33 @@ function drawPatrol(ctx, e) {
   rect(ctx, cx - 6, e.y - 1, 12, 6, e.state === 'alert' ? '#ffb830' : '#7ec8e8');
   rect(ctx, cx - 1, e.y - 10, 3, 7, '#c8ccdc');
   rect(ctx, cx + flip * 8 - (flip < 0 ? 16 : 0), e.y + 14, 16, 4, '#2b2b33');
+}
+
+// 滚雪球陷阱：手绘回退（白球 + 冰蓝阴影，随滚动旋转）
+function drawSnowball(ctx, e) {
+  const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
+  const r = e.w / 2;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(e.rollT * 4);
+  ctx.fillStyle = '#eef7ff';
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#c5dcec';
+  ctx.beginPath();
+  ctx.arc(r * 0.22, r * 0.22, r * 0.55, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(-r * 0.28, -r * 0.32, r * 0.28, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#9bb8cc';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, r - 1, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 // 自爆滚雷：刺球 + 引信闪烁
