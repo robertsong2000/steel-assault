@@ -8,6 +8,18 @@ import { Assets, drawSprite } from './assets.js';
 // 弹道解算弹 vx=dx/T（雪球/齐射/火球/投弹）乘倍率会破坏落点解算，不在此列）
 export const ebSpeed = (base) => base * (LEVEL.ebulletMul || 1) * (CFG.DIFF_MUL || 1);
 
+// 击杀掉落分数（damage() 查表；roller 走引爆特例不在此列）
+export const ENEMY_SCORE = {
+  runner: 100, sniper: 200, turret: 300, drone: 150,
+  grenadier: 250, bomber: 350, shielder: 300, flyer: 150,
+  jumper: 100, para: 200, worm: 300,
+};
+
+// 盾牌兵正面挡弹（火焰除外）。抽成纯函数便于回归单测。
+export function shieldBlocksBullet(e, b) {
+  return e.type === 'shielder' && !b.flame && Math.sign(b.vx || e.facing) === -e.facing;
+}
+
 export class EnemyManager {
   constructor() {
     this.list = [];
@@ -54,6 +66,14 @@ export class EnemyManager {
     this.list.push({
       type: 'grenadier', x: x - 13, y: y - 42, w: 26, h: 42,
       hp: 2, timer: rand(1.0, 2.0), facing: -1, runT: rand(0, 1),
+    });
+  }
+
+  // 掷弹兵变种：缓慢逼近并抛出可弹跳的爆炸榴弹（与原地雪球兵可区分）
+  spawnBomber(x, y) {
+    this.list.push({
+      type: 'bomber', x: x - 13, y: y - 42, w: 26, h: 42,
+      vx: 0, vy: 0, hp: 3, timer: rand(1.0, 2.0), facing: -1, runT: rand(0, 1), onGround: false,
     });
   }
 
@@ -134,6 +154,20 @@ export class EnemyManager {
     e.remove = true;
   }
 
+  // 掷弹兵榴弹爆炸：贴地 AOE，远处安全
+  explodeNade(b, world) {
+    world.particles.explosion(b.x, b.y, 0.9);
+    world.audio.sfx('boom');
+    world.shake(4);
+    const p = world.player;
+    if (p && !p.dead) {
+      const dx = p.x + p.w / 2 - b.x, dy = p.y + p.h / 2 - b.y;
+      const r = b.aoe || 70;
+      if (dx * dx + dy * dy < r * r) world.killPlayer();
+    }
+    b.remove = true;
+  }
+
   spawnPowerup(x, y, kind) {
     this.powerups.push({ x: x - 14, y, w: 28, h: 28, vx: 0, vy: -260, kind, landed: false, life: 12, onGround: false });
   }
@@ -169,8 +203,7 @@ export class EnemyManager {
     const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
     world.particles.explosion(cx, cy, 1);
     world.audio.sfx('explode');
-    const scoreMap = { runner: 100, sniper: 200, turret: 300, drone: 150, grenadier: 250, shielder: 300, flyer: 150, jumper: 100, para: 200, worm: 300 };
-    const sc = scoreMap[e.type] || 100;
+    const sc = ENEMY_SCORE[e.type] || 100;
     world.addScore(sc, cx, cy);
     if (e.type === 'drone' && e.carry) this.spawnPowerup(cx, cy, e.carry);
     e.remove = true;
@@ -252,6 +285,31 @@ export class EnemyManager {
               e.timer = rand(2.4, 3.2);
             }
           }
+          break;
+        }
+        case 'bomber': {
+          const cx = e.x + 13, cy = e.y + 10;
+          const dx = px - cx;
+          e.facing = dx < 0 ? -1 : 1;
+          e.runT += dt;
+          e.vy = Math.min(e.vy + CFG.GRAV * dt, CFG.MAX_FALL);
+          const dist = Math.abs(dx);
+          e.vx = dist > 80 ? e.facing * 70 : 0;
+          physicsMove(e, LEVEL.solids, LEVEL.oneways, dt);
+          if (dist < 560 && !player.dead) {
+            e.timer -= dt;
+            if (e.timer <= 0) {
+              const T = 1.15, g = 900;
+              const vy = (py - cy - 0.5 * g * T * T) / T;
+              this.bullets.push({
+                x: cx, y: cy, vx: dx / T, vy, r: 5, grav: g,
+                kind: 'nade', bounce: 1, aoe: 70, life: 2.4,
+              });
+              world.audio.sfx('eshoot');
+              e.timer = rand(2.6, 3.4);
+            }
+          }
+          if (e.x < camX - 140 || e.y > CFG.H + 100) e.remove = true;
           break;
         }
         case 'shielder': {
@@ -395,15 +453,30 @@ export class EnemyManager {
       b.y += b.vy * dt;
       if (b.life !== undefined) {
         b.life -= dt;
-        if (b.life <= 0) { b.remove = true; continue; }
+        if (b.life <= 0) {
+          if (b.kind === 'nade') this.explodeNade(b, world);
+          else b.remove = true;
+          continue;
+        }
       }
       if (b.x < camX - 60 || b.x > camX + CFG.W + 60 || b.y < -60 || b.y > CFG.H + 60) b.remove = true;
       else if (b.kind !== 'wave') {
         for (const s of LEVEL.solids) {
           if (b.x > s.x && b.x < s.x + s.w && b.y > s.y && b.y < s.y + s.h) {
-            if (b.kind === 'snow' || b.kind === 'ice') world.particles.sparks(b.x, b.y, 6, '#dff0ff');
-            else world.particles.sparks(b.x, b.y, 4, '#ffca7a');
-            b.remove = true;
+            if (b.kind === 'nade') {
+              if (b.bounce > 0) {
+                b.bounce--;
+                b.vy = -Math.abs(b.vy) * 0.55;
+                b.vx *= 0.7;
+                b.y = s.y - 1;
+              } else {
+                this.explodeNade(b, world);
+              }
+            } else {
+              if (b.kind === 'snow' || b.kind === 'ice') world.particles.sparks(b.x, b.y, 6, '#dff0ff');
+              else world.particles.sparks(b.x, b.y, 4, '#ffca7a');
+              b.remove = true;
+            }
             break;
           }
         }
@@ -439,6 +512,7 @@ export class EnemyManager {
       else if (e.type === 'sniper') drawSniper(ctx, e);
       else if (e.type === 'drone') drawDrone(ctx, e, time);
       else if (e.type === 'grenadier') drawGrenadier(ctx, e);
+      else if (e.type === 'bomber') drawBomber(ctx, e);
       else if (e.type === 'shielder') drawShielder(ctx, e);
       else if (e.type === 'flyer') drawFlyer(ctx, e, time);
       else if (e.type === 'jumper') drawJumper(ctx, e);
@@ -466,6 +540,16 @@ export class EnemyManager {
         ctx.beginPath();
         ctx.arc(b.x + 2, b.y + 2, 3, 0, Math.PI * 2);
         ctx.fill();
+      } else if (b.kind === 'nade') {
+        // 掷弹兵榴弹：橄榄绿球体 + 暗色箍
+        ctx.fillStyle = '#4a6a32';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#2c3e1e';
+        ctx.fillRect(b.x - 5, b.y - 1.5, 10, 3);
+        ctx.fillStyle = '#c8a84a';
+        ctx.fillRect(b.x - 1, b.y - 6, 2, 3);
       } else if (b.kind === 'ice') {
         // 冰岩
         ctx.fillStyle = '#9cc8e8';
@@ -658,6 +742,23 @@ function drawGrenadier(ctx, e) {
   rect(ctx, cx - 7, e.y - 4, 14, 6, '#2c4a72');
   rect(ctx, cx - 4 + (e.facing > 0 ? 4 : -6), e.y + 26, 6, 16, '#2c4a72');
   rect(ctx, cx - 2 + (e.facing > 0 ? -6 : 4), e.y + 26, 6, 16, '#35619c');
+}
+
+// 掷弹兵变种：橄榄绿投掷手（代码手绘回退；无专用素材）
+function drawBomber(ctx, e) {
+  const cx = e.x + 13;
+  rect(ctx, cx - 8, e.y + 10, 16, 18, '#5a7a38');
+  rect(ctx, cx - 8, e.y + 10, 16, 5, '#3e5626');
+  rect(ctx, cx - 6, e.y - 2, 12, 12, '#d2b48c');
+  rect(ctx, cx - 7, e.y - 4, 14, 6, '#3e5626');
+  rect(ctx, cx - 4 + (e.facing > 0 ? 4 : -6), e.y + 26, 6, 16, '#3e5626');
+  rect(ctx, cx - 2 + (e.facing > 0 ? -6 : 4), e.y + 26, 6, 16, '#4a6a32');
+  // 手持榴弹
+  const gx = cx + e.facing * 10;
+  ctx.fillStyle = '#4a6a32';
+  ctx.beginPath();
+  ctx.arc(gx, e.y + 18, 4, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 // 盾牌兵：狙击手精灵 + 正面金属盾

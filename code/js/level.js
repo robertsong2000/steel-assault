@@ -49,6 +49,9 @@ export const LEVELS = [
       { x: 3160, y: G },
       { x: 4120, y: G },
     ],
+    bombers: [
+      { x: 980, y: G },
+    ],
     triggers: [
       { x: 500,  type: 'runners', n: 3, dir: -1 },
       { x: 950,  type: 'runners', n: 3, dir: -1 },
@@ -186,6 +189,9 @@ export const LEVELS = [
     grenadiers: [
       { x: 2900, y: G },
       { x: 4600, y: G },
+    ],
+    bombers: [
+      { x: 2100, y: G },
     ],
     shielders: [
       { x: 1100, y: G },

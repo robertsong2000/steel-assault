@@ -6,7 +6,7 @@ import { setupTouch } from './touch.js';
 import { AudioSys } from './audio.js';
 import { Particles } from './particles.js';
 import { LEVEL, LEVELS, setLevel, groundTopAt, drawBackground, drawTerrain, laserActive, updateLevelDynamics } from './level.js';
-import { EnemyManager } from './enemies.js';
+import { EnemyManager, shieldBlocksBullet } from './enemies.js';
 import { Player } from './player.js';
 import { Boss } from './boss.js';
 import { YetiBoss } from './yeti.js';
@@ -95,6 +95,7 @@ class Game {
     for (const t of LEVEL.turrets) this.enemies.spawnTurret(t.x, t.y);
     for (const s of LEVEL.snipers) this.enemies.spawnSniper(s.x, s.y);
     for (const g of LEVEL.grenadiers || []) this.enemies.spawnGrenadier(g.x, g.y);
+    for (const g of LEVEL.bombers || []) this.enemies.spawnBomber(g.x, g.y);
     for (const s of LEVEL.shielders || []) this.enemies.spawnShielder(s.x, s.y);
     for (const wm of LEVEL.sandworms || []) this.enemies.spawnSandworm(wm.x, CFG.GROUND_Y);
     // 触发器复位
@@ -396,7 +397,7 @@ class Game {
         if (overlap(br, e)) {
           if (b.aoe) { this.explodeBullet(b); b.remove = true; break; }
           // 盾牌兵：正面挡弹（爆炸物/火焰除外）
-          if (e.type === 'shielder' && !b.flame && Math.sign(b.vx || e.facing) === -e.facing) {
+          if (shieldBlocksBullet(e, b)) {
             this.particles.sparks(b.x, b.y, 4, '#c8ccdc');
             this.audio.sfx('bossHit');
             b.remove = true;
