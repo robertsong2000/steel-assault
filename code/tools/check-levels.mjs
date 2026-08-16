@@ -4,16 +4,16 @@
 //       水面与流沙不在实体上 / 激光门高度 / Boss 注册表覆盖
 import { LEVELS, LEVEL, setLevel, groundTopAt } from '../js/level.js';
 import { CFG } from '../js/config.js';
+import { BOSS_CLASSES } from '../js/bosses.js';
 
 let fail = 0;
 const err = (m) => { console.error('ERR', m); fail++; };
-const KNOWN_BOSSES = ['fortress', 'yeti', 'mech', 'heli', 'beast'];
 
 LEVELS.forEach((lv, i) => {
   setLevel(i);
   // Boss 配置
   if (!lv.boss) err(`L${i} missing boss type`);
-  else if (!KNOWN_BOSSES.includes(lv.boss)) err(`L${i} unknown boss "${lv.boss}"（需注册 BOSS_CLASSES）`);
+  else if (!BOSS_CLASSES[lv.boss]) err(`L${i} unknown boss "${lv.boss}"（需注册 BOSS_CLASSES）`);
   // CFG 边界同步
   if (CFG.LEVEL_W !== lv.width || CFG.ARENA_WALL_X !== lv.wallX || CFG.BOSS_TRIGGER_X !== lv.bossTriggerX) {
     err(`L${i} CFG sync fail`);
