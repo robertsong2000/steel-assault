@@ -16,7 +16,7 @@
 ## 队列
 
 ### A1 — 手柄支持（Gamepad API）
-- **status**: open
+- **status**: done
 - **priority**: P2
 - **source**: TODO.md → P2 手柄支持
 - **scope**: `code/js/input.js`（+ 必要时 `touch.js` / `hud.js` 提示文案）

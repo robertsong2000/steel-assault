@@ -76,9 +76,9 @@ export function drawTitle(ctx, t, konami, sel) {
   ctx.fillStyle = 'rgba(10,5,20,0.55)';
   ctx.fillRect(CFG.W / 2 - 260, 300, 520, 120);
   const lines = [
-    '← → 移动    ↑ / ↓ 瞄准 / 蹲下',
-    'F 射击      X / 空格 跳跃',
-    'ENTER 开始 / 暂停    M 静音',
+    '← → 移动    ↑ / ↓ 瞄准 / 蹲下    （手柄摇杆/十字键）',
+    'F 射击      X / 空格 跳跃    （手柄 A 跳 / X·RT 射）',
+    'ENTER / START 开始暂停    M 静音',
     '按 9 = 30 条命（金手指）',
   ];
   lines.forEach((l, i) => text(ctx, l, CFG.W / 2, 320 + i * 26, { size: 18, color: '#cfe0ff', align: 'center' }));
@@ -100,7 +100,7 @@ export function drawTitle(ctx, t, konami, sel) {
         CFG.W / 2 + (col - 1) * 200, 424 + row * 24, { size: 17, color, align: 'center' });
     });
     if (Math.floor(t * 2) % 2) {
-      text(ctx, '← → 选关    ↑ ↓ 难度    ENTER 开始', CFG.W / 2, 424 + Math.ceil(levels.length / 3) * 24 + 4, { size: 16, color: '#ffffff', align: 'center' });
+      text(ctx, '← → 选关    ↑ ↓ 难度    ENTER / START 开始', CFG.W / 2, 424 + Math.ceil(levels.length / 3) * 24 + 4, { size: 16, color: '#ffffff', align: 'center' });
     }
     if (sel.diffName) {
       text(ctx, `难度：${sel.diffName}`, CFG.W / 2 + 200, 424 + Math.ceil(levels.length / 3) * 24 + 4, { size: 16, color: '#6aff8a', align: 'left' });
