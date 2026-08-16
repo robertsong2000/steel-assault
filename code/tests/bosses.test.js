@@ -18,4 +18,20 @@ describe('BOSS_CLASSES registry', () => {
     assert.notEqual(BOSS_CLASSES.titan, BOSS_CLASSES.beast);
     assert.equal(LEVELS[5].boss, 'titan');
   });
+
+  it('maps L7 warden to a distinct class from titan / heli / mech', () => {
+    assert.equal(typeof BOSS_CLASSES.warden, 'function');
+    assert.notEqual(BOSS_CLASSES.warden, BOSS_CLASSES.titan);
+    assert.notEqual(BOSS_CLASSES.warden, BOSS_CLASSES.heli);
+    assert.notEqual(BOSS_CLASSES.warden, BOSS_CLASSES.mech);
+    assert.equal(LEVELS[6].boss, 'warden');
+  });
+
+  it('maps L8 overlord to a distinct class from warden / titan / heli', () => {
+    assert.equal(typeof BOSS_CLASSES.overlord, 'function');
+    assert.notEqual(BOSS_CLASSES.overlord, BOSS_CLASSES.warden);
+    assert.notEqual(BOSS_CLASSES.overlord, BOSS_CLASSES.titan);
+    assert.notEqual(BOSS_CLASSES.overlord, BOSS_CLASSES.heli);
+    assert.equal(LEVELS[7].boss, 'overlord');
+  });
 });
