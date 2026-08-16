@@ -162,6 +162,7 @@ class Game {
 
   // ---------------- 更新 ----------------
   update(dt) {
+    this.input.pollGamepad();
     this.time += dt;
     if (this.input.wasPressed('mute')) this.audio.toggleMute();
     this.shakeT = Math.max(0, this.shakeT - dt);
