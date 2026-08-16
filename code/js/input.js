@@ -1,5 +1,5 @@
 // ===================== 键盘输入 & 科乐美秘技彩蛋 =====================
-const ACTION_KEYS = {
+export const DEFAULT_ACTION_KEYS = {
   left:  ['ArrowLeft', 'KeyA'],
   right: ['ArrowRight', 'KeyD'],
   up:    ['ArrowUp', 'KeyW'],
@@ -8,6 +8,7 @@ const ACTION_KEYS = {
   jump:  ['KeyX', 'KeyK', 'Space'],
   start: ['Enter', 'KeyP'],
   mute:  ['KeyM'],
+  settings: ['Escape', 'KeyO'],
 };
 const PREVENT = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space']);
 const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA'];
@@ -19,6 +20,18 @@ export class Input {
     this.virtual = new Set();   // 触屏虚拟按键
     this.konamiIdx = 0;
     this.onKonami = null;
+    this.keys = {
+      left: [...DEFAULT_ACTION_KEYS.left],
+      right: [...DEFAULT_ACTION_KEYS.right],
+      up: [...DEFAULT_ACTION_KEYS.up],
+      down: [...DEFAULT_ACTION_KEYS.down],
+      shoot: [...DEFAULT_ACTION_KEYS.shoot],
+      jump: [...DEFAULT_ACTION_KEYS.jump],
+      start: [...DEFAULT_ACTION_KEYS.start],
+      mute: [...DEFAULT_ACTION_KEYS.mute],
+      settings: [...DEFAULT_ACTION_KEYS.settings],
+    };
+    if (typeof window === 'undefined') return;
     window.addEventListener('keydown', (e) => {
       if (!e.repeat) {
         this.pressed.add(e.code);
@@ -31,6 +44,11 @@ export class Input {
     });
     window.addEventListener('keyup', (e) => this.down.delete(e.code));
     window.addEventListener('blur', () => this.down.clear());
+  }
+
+  setBindings({ shoot, jump } = {}) {
+    if (shoot) this.keys.shoot = Array.isArray(shoot) ? [...shoot] : [shoot];
+    if (jump) this.keys.jump = Array.isArray(jump) ? [...jump] : [jump];
   }
 
   trackKonami(code) {
@@ -62,10 +80,10 @@ export class Input {
   }
 
   isDown(action) {
-    return ACTION_KEYS[action].some((c) => this.down.has(c) || this.virtual.has(c));
+    return (this.keys[action] || []).some((c) => this.down.has(c) || this.virtual.has(c));
   }
   wasPressed(action) {
-    return ACTION_KEYS[action].some((c) => this.pressed.has(c));
+    return (this.keys[action] || []).some((c) => this.pressed.has(c));
   }
   endFrame() {
     this.pressed.clear();

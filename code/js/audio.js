@@ -1,5 +1,7 @@
 // ===================== 音频系统：合成音效 + 原创芯片BGM + CC0短音乐 =====================
 // BGM 为原创曲（A小调行进摇滚动机），不引用任何现成游戏旋律。
+import { clampVolume, DEFAULT_SETTINGS } from './settings.js';
+
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
 // 关卡BGM：8小节 x 16步。0=休止
@@ -24,6 +26,7 @@ export class AudioSys {
   constructor() {
     this.ctx = null;
     this.muted = false;
+    this.masterVol = DEFAULT_SETTINGS.volume;
     this.bgmTimer = null;
     this.step = 0;
     this.mode = null;
@@ -35,7 +38,7 @@ export class AudioSys {
       const AC = window.AudioContext || window.webkitAudioContext;
       this.ctx = new AC();
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.45;
+      this.master.gain.value = this.muted ? 0 : this.masterVol;
       this.master.connect(this.ctx.destination);
       this.sfxGain = this.ctx.createGain();
       this.sfxGain.gain.value = 0.9;
@@ -48,9 +51,15 @@ export class AudioSys {
     if (this.ctx.state === 'suspended') this.ctx.resume();
   }
 
+  setMasterVolume(v) {
+    this.masterVol = clampVolume(v);
+    if (this.master && !this.muted) this.master.gain.value = this.masterVol;
+    return this.masterVol;
+  }
+
   toggleMute() {
     this.muted = !this.muted;
-    if (this.master) this.master.gain.value = this.muted ? 0 : 0.45;
+    if (this.master) this.master.gain.value = this.muted ? 0 : this.masterVol;
     return this.muted;
   }
 
