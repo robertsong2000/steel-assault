@@ -4,11 +4,14 @@ import { LEVELS, LEVEL, setLevel, groundTopAt } from '../js/level.js';
 import { CFG } from '../js/config.js';
 
 describe('setLevel isolation', () => {
-  it('exposes exactly 6 campaign levels', () => {
-    assert.equal(LEVELS.length, 6);
+  it('exposes exactly 7 campaign levels', () => {
+    assert.equal(LEVELS.length, 7);
     assert.match(LEVELS[5].name, /第6关/);
     assert.equal(LEVELS[5].boss, 'titan');
     assert.equal(LEVELS[5].theme, 'volcano');
+    assert.match(LEVELS[6].name, /第7关/);
+    assert.equal(LEVELS[6].boss, 'warden');
+    assert.equal(LEVELS[6].theme, 'storm');
   });
 
   it('clears optional keys when switching from desert back to jungle', () => {
@@ -53,6 +56,33 @@ describe('setLevel isolation', () => {
   it('syncs CFG boundaries from the volcano level def', () => {
     setLevel(5);
     const lv = LEVELS[5];
+    assert.equal(CFG.LEVEL_W, lv.width);
+    assert.equal(CFG.ARENA_WALL_X, lv.wallX);
+    assert.equal(CFG.BOSS_TRIGGER_X, lv.bossTriggerX);
+  });
+
+  it('isolates storm (L7) keys when switching back to jungle', () => {
+    setLevel(6);
+    assert.equal(LEVEL.theme, 'storm');
+    assert.equal(LEVEL.boss, 'warden');
+    assert.ok(LEVEL.ebulletMul > 1.2, 'L7 should press harder than volcano 1.2');
+    assert.ok(LEVEL.width >= 5600);
+    assert.ok(LEVEL.triggers.length > 0, 'L7 must not be an empty stage');
+    assert.ok((LEVEL.lasers || []).length > 0, 'storm city should reuse electric gates');
+    assert.ok((LEVEL.winds || []).length > 0, 'storm city should have gusts');
+
+    setLevel(0);
+    assert.equal(LEVEL.theme, 'jungle');
+    assert.equal(LEVEL.boss, 'fortress');
+    assert.equal(LEVEL.ebulletMul, undefined);
+    assert.equal(LEVEL.lasers, undefined);
+    assert.equal(LEVEL.winds, undefined);
+    assert.equal(LEVEL.sandworms, undefined);
+  });
+
+  it('syncs CFG boundaries from the storm level def', () => {
+    setLevel(6);
+    const lv = LEVELS[6];
     assert.equal(CFG.LEVEL_W, lv.width);
     assert.equal(CFG.ARENA_WALL_X, lv.wallX);
     assert.equal(CFG.BOSS_TRIGGER_X, lv.bossTriggerX);

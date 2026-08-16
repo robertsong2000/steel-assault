@@ -30,7 +30,7 @@ describe('difficulty & music', () => {
   });
 
   it('has one BGM variation per campaign level', () => {
-    assert.equal(LEVEL_MUSIC.length, 6);
+    assert.equal(LEVEL_MUSIC.length, 7);
     for (const m of LEVEL_MUSIC) {
       assert.ok(typeof m.bpm === 'number' && m.bpm > 0);
       assert.ok(typeof m.transpose === 'number');
