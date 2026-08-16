@@ -72,7 +72,7 @@
 - **tests**: 生成与伤害边界单测 + `npm run check`
 
 ### A6 — 第 6 关（规划落地）
-- **status**: open
+- **status**: done
 - **priority**: P1
 - **depends**: 建议先完成 A3–A5 至少一项，避免空关卡
 - **source**: TODO.md → 第 6~8 关

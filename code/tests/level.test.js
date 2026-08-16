@@ -4,8 +4,11 @@ import { LEVELS, LEVEL, setLevel, groundTopAt } from '../js/level.js';
 import { CFG } from '../js/config.js';
 
 describe('setLevel isolation', () => {
-  it('exposes exactly 5 campaign levels', () => {
-    assert.equal(LEVELS.length, 5);
+  it('exposes exactly 6 campaign levels', () => {
+    assert.equal(LEVELS.length, 6);
+    assert.match(LEVELS[5].name, /第6关/);
+    assert.equal(LEVELS[5].boss, 'titan');
+    assert.equal(LEVELS[5].theme, 'volcano');
   });
 
   it('clears optional keys when switching from desert back to jungle', () => {
@@ -25,6 +28,31 @@ describe('setLevel isolation', () => {
   it('syncs CFG boundaries from the active level def', () => {
     setLevel(3);
     const lv = LEVELS[3];
+    assert.equal(CFG.LEVEL_W, lv.width);
+    assert.equal(CFG.ARENA_WALL_X, lv.wallX);
+    assert.equal(CFG.BOSS_TRIGGER_X, lv.bossTriggerX);
+  });
+
+  it('isolates volcano (L6) keys when switching back to jungle', () => {
+    setLevel(5);
+    assert.equal(LEVEL.theme, 'volcano');
+    assert.equal(LEVEL.boss, 'titan');
+    assert.ok(LEVEL.ebulletMul > 1.15, 'L6 should press harder than desert 1.15');
+    assert.ok(LEVEL.width >= 5600);
+    assert.ok(LEVEL.triggers.length > 0, 'L6 must not be an empty stage');
+
+    setLevel(0);
+    assert.equal(LEVEL.theme, 'jungle');
+    assert.equal(LEVEL.boss, 'fortress');
+    assert.equal(LEVEL.ebulletMul, undefined);
+    assert.equal(LEVEL.sandworms, undefined);
+    assert.equal(LEVEL.lasers, undefined);
+    assert.equal(LEVEL.winds, undefined);
+  });
+
+  it('syncs CFG boundaries from the volcano level def', () => {
+    setLevel(5);
+    const lv = LEVELS[5];
     assert.equal(CFG.LEVEL_W, lv.width);
     assert.equal(CFG.ARENA_WALL_X, lv.wallX);
     assert.equal(CFG.BOSS_TRIGGER_X, lv.bossTriggerX);

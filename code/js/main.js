@@ -9,17 +9,11 @@ import { LEVEL, LEVELS, setLevel, groundTopAt, drawBackground, drawTerrain, lase
 import { EnemyManager, shieldBlocksBullet } from './enemies.js';
 import { Player } from './player.js';
 import { Boss } from './boss.js';
-import { YetiBoss } from './yeti.js';
-import { MechBoss } from './mech.js';
-import { HeliBoss } from './heli.js';
-import { LavaBeast } from './lavabeast.js';
+import { BOSS_CLASSES } from './bosses.js';
 import { drawHUD, drawTitle, drawPause, drawGameOver, drawVictory, drawStageBanner } from './hud.js';
 import { Assets } from './assets.js';
 
 const STEP = 1 / 60;
-
-// Boss 注册表：关卡 def 的 boss 字段 → Boss 类
-const BOSS_CLASSES = { fortress: Boss, yeti: YetiBoss, mech: MechBoss, heli: HeliBoss, beast: LavaBeast };
 
 class Game {
   constructor(canvas) {

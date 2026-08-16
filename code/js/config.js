@@ -65,4 +65,5 @@ export const LEVEL_MUSIC = [
   { transpose: -2, bpm: 146 },  // 基地 低沉闷
   { transpose: 2, bpm: 156 },   // 战舰 明亮
   { transpose: -4, bpm: 158 },  // 遗迹 紧张
+  { transpose: 3, bpm: 162 },   // 火山 急促
 ];
