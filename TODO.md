@@ -1,6 +1,9 @@
 # STEEL ASSAULT — 开发 TODO
 
 > 图例：🔥 当前优先 ｜ ✅ 已完成 ｜ ⬜ 待开发
+>
+> **自动化**：剩余 open 项由 Cloud Automation 按 [`AUTOMATION_QUEUE.md`](AUTOMATION_QUEUE.md) 逐项认领（TDD）。
+> 启用步骤见 [`AUTOMATION.md`](AUTOMATION.md)。
 
 ## P0 — 武器/子弹系统扩展（当前需求）✅ 2026-07-22 完成
 

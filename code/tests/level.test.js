@@ -1,0 +1,69 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { LEVELS, LEVEL, setLevel, groundTopAt } from '../js/level.js';
+import { CFG } from '../js/config.js';
+
+describe('setLevel isolation', () => {
+  it('exposes exactly 5 campaign levels', () => {
+    assert.equal(LEVELS.length, 5);
+  });
+
+  it('clears optional keys when switching from desert back to jungle', () => {
+    setLevel(4); // 遗迹：含 sandworms / ebulletMul / winds 等可选字段
+    assert.ok(LEVEL.sandworms?.length > 0);
+    assert.equal(LEVEL.ebulletMul, 1.15);
+
+    setLevel(0); // 丛林：不应残留上一关可选键
+    assert.equal(LEVEL.sandworms, undefined);
+    assert.equal(LEVEL.ebulletMul, undefined);
+    assert.equal(LEVEL.lasers, undefined);
+    assert.equal(LEVEL.winds, undefined);
+    assert.equal(LEVEL.theme, 'jungle');
+    assert.equal(LEVEL.boss, 'fortress');
+  });
+
+  it('syncs CFG boundaries from the active level def', () => {
+    setLevel(3);
+    const lv = LEVELS[3];
+    assert.equal(CFG.LEVEL_W, lv.width);
+    assert.equal(CFG.ARENA_WALL_X, lv.wallX);
+    assert.equal(CFG.BOSS_TRIGGER_X, lv.bossTriggerX);
+  });
+
+  it('deep-copies solids so runtime mutations do not leak across restarts', () => {
+    setLevel(3);
+    const before = LEVEL.oneways.find((p) => p.kind === 'crumble');
+    assert.ok(before, 'level 4 should have crumble platforms');
+    before.gone = true;
+    before.goneT = 3.5;
+
+    setLevel(3);
+    const after = LEVEL.oneways.find((p) => p.kind === 'crumble' && p.x === before.x);
+    assert.ok(after);
+    assert.equal(after.gone, undefined);
+    assert.equal(after.goneT, undefined);
+  });
+});
+
+describe('groundTopAt safe mode', () => {
+  it('skips gone crumble platforms and quicksand when safe=true', () => {
+    setLevel(3); // 战舰：塌陷平台
+    const crumb = LEVEL.oneways.find((p) => p.kind === 'crumble');
+    assert.ok(crumb);
+    const x = crumb.x + crumb.w / 2;
+    const normal = groundTopAt(x);
+    assert.equal(normal, crumb.y);
+
+    crumb.gone = true;
+    const safe = groundTopAt(x, { safe: true });
+    // 安全模式不得再把已塌落平台当作落脚点
+    assert.notEqual(safe, crumb.y);
+
+    // 流沙：在坑洞上空注入 quicksand，验证 safe 跳过且无其它落脚点
+    setLevel(0);
+    const sandX = 1220; // 丛林第一段水面坑
+    LEVEL.oneways.push({ x: sandX, y: 400, w: 60, h: 16, kind: 'quicksand' });
+    assert.equal(groundTopAt(sandX + 30), 400);
+    assert.equal(groundTopAt(sandX + 30, { safe: true }), null);
+  });
+});
