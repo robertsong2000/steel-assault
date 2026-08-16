@@ -84,7 +84,7 @@
 - **tests**: 关卡隔离 / Boss 注册 / `npm run check`
 
 ### A7 — 第 7 关
-- **status**: open
+- **status**: done
 - **priority**: P1
 - **depends**: A6
 - **source**: TODO.md → 第 6~8 关

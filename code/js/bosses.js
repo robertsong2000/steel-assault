@@ -5,6 +5,7 @@ import { MechBoss } from './mech.js';
 import { HeliBoss } from './heli.js';
 import { LavaBeast } from './lavabeast.js';
 import { TitanBoss } from './titan.js';
+import { StormWarden } from './warden.js';
 
 export const BOSS_CLASSES = {
   fortress: Boss,
@@ -13,4 +14,5 @@ export const BOSS_CLASSES = {
   heli: HeliBoss,
   beast: LavaBeast,
   titan: TitanBoss,
+  warden: StormWarden,
 };

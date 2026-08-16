@@ -463,6 +463,99 @@ export const LEVELS = [
     // 熔岩河（坑底致死，与丛林水面相同判定）
     waters: [[1100, 1280], [2120, 2300], [3200, 3400], [4300, 4500]],
   },
+  {
+    name: '第7关 雷暴废城',
+    theme: 'storm',
+    boss: 'warden',
+    ebulletMul: 1.25,     // 后半程再加压：敌弹提速 25%
+    width: 5900,
+    bossTriggerX: 5060,
+    wallX: 5610,
+    // 地貌性格：被淹街道（积水坑 + 塌楼踏板 + 电栅 + 暴风侧吹）
+    solids: [
+      { x: 0,    y: G, w: 1050, h: 70, kind: 'ground' },
+      { x: 1240, y: G, w: 760,  h: 70, kind: 'ground' },
+      { x: 2200, y: G, w: 850,  h: 70, kind: 'ground' },
+      { x: 3250, y: G, w: 850,  h: 70, kind: 'ground' },
+      { x: 4300, y: G, w: 700,  h: 70, kind: 'ground' },
+      { x: 5200, y: G, w: 700,  h: 70, kind: 'ground' },
+      { x: 650,  y: 380, w: 180, h: 90,  kind: 'rock' },
+      { x: 1550, y: 370, w: 180, h: 100, kind: 'rock' },
+      { x: 2500, y: 385, w: 160, h: 85,  kind: 'rock' },
+      { x: 3600, y: 370, w: 200, h: 100, kind: 'rock' },
+      { x: 4800, y: 385, w: 160, h: 85,  kind: 'rock' },
+      { x: 5280, y: 390, w: 160, h: 80,  kind: 'rock' },
+      { x: 5610, y: 0, w: 290, h: G, kind: 'wall' },
+    ],
+    oneways: [
+      { x: 480,  y: 340, w: 150, h: 14, kind: 'metal' },
+      { x: 1080, y: 400, w: 140, h: 14, kind: 'metal' },
+      { x: 1140, y: 330, w: 90,  h: 14, kind: 'crumble' },
+      { x: 2050, y: 400, w: 140, h: 14, kind: 'metal' },
+      { x: 2110, y: 320, w: 100, h: 14, kind: 'crumble' },
+      { x: 2550, y: 280, w: 140, h: 14, kind: 'metal' },
+      { x: 3100, y: 400, w: 140, h: 14, kind: 'metal' },
+      { x: 3160, y: 330, w: 90,  h: 14, kind: 'crumble' },
+      { x: 3700, y: 280, w: 140, h: 14, kind: 'metal' },
+      { x: 4150, y: 400, w: 140, h: 14, kind: 'metal' },
+      { x: 4680, y: 340, w: 150, h: 14, kind: 'metal' },
+      { x: 5300, y: 300, w: 150, h: 14, kind: 'metal' },
+    ],
+    turrets: [
+      { x: 740,  y: 380 },
+      { x: 1640, y: 370 },
+      { x: 2620, y: 280 },
+      { x: 3680, y: 370 },
+    ],
+    snipers: [
+      { x: 1400, y: G },
+      { x: 3500, y: G },
+      { x: 4900, y: G },
+    ],
+    grenadiers: [
+      { x: 850,  y: G },
+      { x: 2700, y: G },
+      { x: 4600, y: G },
+    ],
+    shielders: [
+      { x: 1800, y: G },
+      { x: 3900, y: G },
+    ],
+    lasers: [
+      { x: 900,  h: 110, offset: 0.0 },
+      { x: 2400, h: 240, offset: 0.9 },
+      { x: 3450, h: 110, offset: 1.8 },
+      { x: 4700, h: 240, offset: 0.4 },
+    ],
+    winds: [
+      { x0: 1050, x1: 1240, force: -80 },
+      { x0: 2000, x1: 2200, force: 80 },
+      { x0: 4100, x1: 4300, force: -80 },
+    ],
+    triggers: [
+      { x: 350,  type: 'runners', n: 3, dir: -1 },
+      { x: 700,  type: 'rollers', n: 2, dir: -1 },
+      { x: 1000, type: 'drone', carry: 'M' },
+      { x: 1300, type: 'paras', n: 2 },
+      { x: 1650, type: 'jumpers', n: 2, dir: -1 },
+      { x: 1950, type: 'drone', carry: 'S' },
+      { x: 2250, type: 'flyers', n: 2 },
+      { x: 2550, type: 'runners', n: 3, dir: -1 },
+      { x: 2850, type: 'drone', carry: 'L' },
+      { x: 3100, type: 'rollers', n: 2, dir: -1 },
+      { x: 3400, type: 'drone', carry: 'B' },
+      { x: 3650, type: 'jumpers', n: 2, dir: -1 },
+      { x: 3900, type: 'drone', carry: 'G' },
+      { x: 4150, type: 'flyers', n: 3 },
+      { x: 4400, type: 'runners', n: 3, dir: -1 },
+      { x: 4650, type: 'drone', carry: 'H' },
+      { x: 4850, type: 'drone', carry: 'M' },
+      { x: 5000, type: 'drone', carry: 'F' },
+      { x: 5250, type: 'rollers', n: 2, dir: -1 },
+    ],
+    // 被淹街道（坑底致死，与水面相同判定）
+    waters: [[1050, 1240], [2000, 2200], [3050, 3250], [4100, 4300]],
+  },
 ];
 
 // 当前关卡（setLevel 就地替换内容，外部 import 绑定不失效）
@@ -568,6 +661,7 @@ export function drawBackground(ctx, camX, t) {
   if (LEVEL.theme === 'sky') return drawSkyBackground(ctx, camX, t);
   if (LEVEL.theme === 'desert') return drawDesertBackground(ctx, camX, t);
   if (LEVEL.theme === 'volcano') return drawVolcanoBackground(ctx, camX, t);
+  if (LEVEL.theme === 'storm') return drawStormBackground(ctx, camX, t);
 
   const sky = Assets.get('bg_sky');
   if (sky) {
@@ -803,6 +897,60 @@ function drawVolcanoBackground(ctx, camX, t) {
   ctx.globalAlpha = 1;
 }
 
+// ---------------- 雷暴废城背景 ----------------
+function drawStormBackground(ctx, camX, t) {
+  const grad = ctx.createLinearGradient(0, 0, 0, CFG.H);
+  grad.addColorStop(0, '#0c1020');
+  grad.addColorStop(0.4, '#1a2440');
+  grad.addColorStop(0.75, '#2a3858');
+  grad.addColorStop(1, '#1c2838');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, CFG.W, CFG.H);
+  // 闪电闪空
+  const flash = Math.sin(t * 7.3) > 0.92 || Math.sin(t * 3.1 + 1.7) > 0.96;
+  if (flash) {
+    ctx.fillStyle = 'rgba(180,220,255,0.22)';
+    ctx.fillRect(0, 0, CFG.W, CFG.H);
+  }
+  // 废楼剪影
+  drawRidge(ctx, camX * 0.12, 300, 150, '#12182a', 0.7);
+  ctx.fillStyle = '#151c30';
+  for (let i = -1; i < 10; i++) {
+    const wx = i * 180 + (camX * 0.32 % 180);
+    const h = 70 + hash01(i + Math.floor(camX * 0.32 / 180), 5) * 110;
+    ctx.fillRect(wx, CFG.GROUND_Y - h, 40, h);
+    ctx.fillRect(wx + 8, CFG.GROUND_Y - h - 18, 16, 18);
+    ctx.fillStyle = flash ? '#7ad0ff' : '#2a3858';
+    ctx.fillRect(wx + 10, CFG.GROUND_Y - h + 16, 8, 10);
+    ctx.fillStyle = '#151c30';
+  }
+  // 雨
+  ctx.fillStyle = 'rgba(170,200,230,0.45)';
+  for (let i = 0; i < 70; i++) {
+    const x = (hash01(i, 5) * CFG.W + t * (220 + hash01(i, 9) * 80)) % CFG.W;
+    const y = (hash01(i, 7) * CFG.H + t * 380) % CFG.H;
+    ctx.fillRect(x, y, 1, 8);
+  }
+  // 侧风气流
+  if (LEVEL.winds) {
+    ctx.fillStyle = 'rgba(170,210,255,0.35)';
+    for (const w of LEVEL.winds) {
+      if (w.x1 < camX || w.x0 > camX + CFG.W) continue;
+      for (let i = 0; i < 8; i++) {
+        const wy = 100 + hash01(i, w.x0) * 300;
+        const span = w.x1 - w.x0;
+        const wx = w.x0 + ((hash01(i, 7) * span + t * w.force * 3) % span + span) % span;
+        ctx.fillRect(wx, wy, w.force > 0 ? 22 : -22, 2);
+      }
+    }
+  }
+  const fog = ctx.createLinearGradient(0, CFG.GROUND_Y - 180, 0, CFG.GROUND_Y);
+  fog.addColorStop(0, 'rgba(12,16,32,0)');
+  fog.addColorStop(1, 'rgba(12,16,32,0.4)');
+  ctx.fillStyle = fog;
+  ctx.fillRect(0, CFG.GROUND_Y - 180, CFG.W, 180);
+}
+
 // ---------------- 基地内部背景 ----------------
 function drawBaseBackground(ctx, camX, t) {
   const bg = Assets.get('bg_base');
@@ -990,6 +1138,7 @@ function drawGround(ctx, s) {
   if (LEVEL.theme === 'base' || LEVEL.theme === 'sky') return drawBaseGround(ctx, s);
   if (LEVEL.theme === 'desert') return drawSandGround(ctx, s);
   if (LEVEL.theme === 'volcano') return drawVolcanoGround(ctx, s);
+  if (LEVEL.theme === 'storm') return drawStormGround(ctx, s);
   const pat = Assets.pattern(ctx, 'tile_ground');
   if (pat) {
     ctx.fillStyle = pat;
@@ -1051,6 +1200,17 @@ function drawVolcanoGround(ctx, s) {
   for (let x = s.x; x < s.x + s.w; x += 22) {
     if (hash01(x, s.y) > 0.62) rect(ctx, x, s.y + 16, 3, 18 + hash01(x, 7) * 16, '#e8552a');
     if (hash01(x, 99) > 0.7) rect(ctx, x + 8, s.y - 4, 5, 4, '#c94a20');
+  }
+}
+
+// 废城地面：湿沥青 + 积水反光
+function drawStormGround(ctx, s) {
+  rect(ctx, s.x, s.y, s.w, s.h, '#2a3040');
+  rect(ctx, s.x, s.y, s.w, 10, '#3a4458');
+  rect(ctx, s.x, s.y + 10, s.w, 4, '#1c2230');
+  for (let x = s.x; x < s.x + s.w; x += 28) {
+    if (hash01(x, s.y) > 0.55) rect(ctx, x, s.y + 2, 10, 2, '#7ad0ff');
+    if (hash01(x, 99) > 0.65) rect(ctx, x + 8, s.y + 22 + hash01(x, 5) * 24, 6, 3, '#1a2030');
   }
 }
 
@@ -1240,6 +1400,22 @@ function drawWater(ctx, camX, t, x0, x1) {
       const bx = x0 + hash01(i, x0) * (x1 - x0);
       const by = 506 + ((t * 22 + i * 15) % 28);
       ctx.fillRect(bx, by, 3, 3);
+    }
+    return;
+  }
+  if (LEVEL.theme === 'storm') {
+    // 积水街道：深青水面 + 雨点涟漪
+    rect(ctx, x0, 500, x1 - x0, 40, '#0e2438');
+    ctx.fillStyle = '#3a6a88';
+    for (let x = x0; x < x1; x += 16) {
+      const yy = 502 + Math.sin(t * 4 + x * 0.1) * 3;
+      ctx.fillRect(x, yy, 10, 3);
+    }
+    ctx.fillStyle = '#7ad0ff';
+    for (let i = 0; i < 4; i++) {
+      const bx = x0 + hash01(i, x0) * (x1 - x0);
+      const by = 506 + ((t * 28 + i * 13) % 26);
+      ctx.fillRect(bx, by, 2, 2);
     }
     return;
   }
