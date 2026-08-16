@@ -8,6 +8,13 @@ import { Assets, drawSprite } from './assets.js';
 // 弹道解算弹 vx=dx/T（雪球/齐射/火球/投弹）乘倍率会破坏落点解算，不在此列）
 export const ebSpeed = (base) => base * (LEVEL.ebulletMul || 1) * (CFG.DIFF_MUL || 1);
 
+// 击杀掉落分数（damage() 查表；roller 走引爆特例不在此列）
+export const ENEMY_SCORE = {
+  runner: 100, sniper: 200, turret: 300, drone: 150,
+  grenadier: 250, shielder: 300, flyer: 150, jumper: 100,
+  para: 200, worm: 300, patrol: 220,
+};
+
 export class EnemyManager {
   constructor() {
     this.list = [];
@@ -112,6 +119,21 @@ export class EnemyManager {
     }
   }
 
+  // 巡逻机器人：沿驻点来回踱步，发现玩家后停步射击
+  spawnPatrols(n, camX) {
+    for (let i = 0; i < n; i++) {
+      let x = camX + CFG.W + 40 + i * 72;
+      x = Math.min(x, CFG.ARENA_WALL_X - 30);
+      const top = groundTopAt(x, { safe: true }) ?? CFG.GROUND_Y;
+      this.list.push({
+        type: 'patrol', x, y: top - 40, w: 26, h: 40,
+        vx: 0, vy: 0, dir: -1, facing: -1, hp: 3,
+        state: 'patrol', homeX: x, patrolRange: 140, detectRange: 420,
+        timer: 0.5, runT: rand(0, 1), onGround: false,
+      });
+    }
+  }
+
   // 沙虫：埋伏沙下，玩家靠近破土突袭
   spawnSandworm(x, y) {
     this.list.push({
@@ -169,8 +191,7 @@ export class EnemyManager {
     const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
     world.particles.explosion(cx, cy, 1);
     world.audio.sfx('explode');
-    const scoreMap = { runner: 100, sniper: 200, turret: 300, drone: 150, grenadier: 250, shielder: 300, flyer: 150, jumper: 100, para: 200, worm: 300 };
-    const sc = scoreMap[e.type] || 100;
+    const sc = ENEMY_SCORE[e.type] || 100;
     world.addScore(sc, cx, cy);
     if (e.type === 'drone' && e.carry) this.spawnPowerup(cx, cy, e.carry);
     e.remove = true;
@@ -352,6 +373,35 @@ export class EnemyManager {
           }
           break;
         }
+        case 'patrol': {
+          const cx = e.x + e.w / 2;
+          const dx = px - cx;
+          const dist = Math.abs(dx);
+          e.runT += dt;
+          e.vy = Math.min(e.vy + CFG.GRAV * dt, CFG.MAX_FALL);
+          if (!player.dead && dist < e.detectRange) {
+            e.state = 'alert';
+            e.facing = dx < 0 ? -1 : 1;
+            e.dir = e.facing;
+            e.vx = 0;
+            e.timer -= dt;
+            if (e.timer <= 0) {
+              this.fireAimed(cx + e.facing * 16, e.y + 14, px, py);
+              world.audio.sfx('eshoot');
+              e.timer = 1.4;
+            }
+          } else {
+            e.state = 'patrol';
+            if (e.x <= e.homeX - e.patrolRange) e.dir = 1;
+            if (e.x >= e.homeX + e.patrolRange) e.dir = -1;
+            e.facing = e.dir;
+            e.vx = e.dir * 90;
+            e.timer = 0.35;
+          }
+          physicsMove(e, LEVEL.solids, LEVEL.oneways, dt);
+          if (e.x < camX - 200 || e.y > CFG.H + 100) e.remove = true;
+          break;
+        }
         case 'para': {
           if (e.state === 'fall') {
             // 降落伞：缓降 + 摇摆
@@ -445,6 +495,7 @@ export class EnemyManager {
       else if (e.type === 'roller') drawRoller(ctx, e, time);
       else if (e.type === 'para') drawPara(ctx, e, time);
       else if (e.type === 'worm') drawWorm(ctx, e, time);
+      else if (e.type === 'patrol') drawPatrol(ctx, e);
       // 受击白闪
       if (e.hitFlash > 0) {
         ctx.save();
@@ -709,6 +760,21 @@ function drawJumper(ctx, e) {
   rect(ctx, cx - 8, e.y + 10, 16, 18, '#7a4ec2');
   rect(ctx, cx - 6, e.y - 2, 12, 12, '#f0c090');
   rect(ctx, cx - 7, e.y - 4, 14, 6, '#3a2056');
+}
+
+// 巡逻机器人：钢壳 + 琥珀目镜（无素材时手绘回退）
+function drawPatrol(ctx, e) {
+  const cx = e.x + 13;
+  const flip = e.facing < 0 ? -1 : 1;
+  const legA = e.state === 'patrol' ? Math.sin(e.runT * 10) * 5 : 0;
+  rect(ctx, cx - 5 + legA, e.y + 26, 7, 14, '#3a3e4a');
+  rect(ctx, cx - 5 - legA, e.y + 26, 7, 14, '#4a4e5c');
+  rect(ctx, cx - 10, e.y + 8, 20, 20, '#6a7080');
+  rect(ctx, cx - 10, e.y + 8, 20, 5, '#8a90a4');
+  rect(ctx, cx - 8, e.y - 4, 16, 14, '#4a5060');
+  rect(ctx, cx - 6, e.y - 1, 12, 6, e.state === 'alert' ? '#ffb830' : '#7ec8e8');
+  rect(ctx, cx - 1, e.y - 10, 3, 7, '#c8ccdc');
+  rect(ctx, cx + flip * 8 - (flip < 0 ? 16 : 0), e.y + 14, 16, 4, '#2b2b33');
 }
 
 // 自爆滚雷：刺球 + 引信闪烁

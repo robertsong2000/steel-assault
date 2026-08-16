@@ -297,6 +297,7 @@ class Game {
         else if (t.type === 'jumpers') this.enemies.spawnJumpers(t.n, t.dir, this.camX);
         else if (t.type === 'rollers') this.enemies.spawnRollers(t.n, t.dir, this.camX);
         else if (t.type === 'paras') this.enemies.spawnParas(t.n, this.camX);
+        else if (t.type === 'patrols') this.enemies.spawnPatrols(t.n, this.camX);
       }
     }
   }
@@ -459,7 +460,7 @@ class Game {
       // 敌人撞击（跑男/盾牌兵/寒冰无人机/蛙跳兵/空降兵/沙虫出土时）
       for (const e of this.enemies.list) {
         const toucher = e.type === 'runner' || e.type === 'shielder' || e.type === 'flyer'
-          || e.type === 'jumper' || e.type === 'para'
+          || e.type === 'jumper' || e.type === 'para' || e.type === 'patrol'
           || (e.type === 'worm' && e.state !== 'hide');
         if (toucher && overlap(e, pr)) {
           this.killPlayer();

@@ -43,7 +43,7 @@
   - `npm run check` 全绿
 
 ### A3 — 新敌人：巡逻机器人
-- **status**: open
+- **status**: done
 - **priority**: P1
 - **source**: TODO.md → 新敌人类型（扩展）
 - **scope**: `enemies.js` + 在现有 1–2 关 `triggers` 少量投放（不要一次改五关）
