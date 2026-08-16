@@ -56,7 +56,7 @@
   - `npm run check` 全绿
 
 ### A4 — 新敌人：掷弹兵变种
-- **status**: open
+- **status**: done
 - **priority**: P1
 - **source**: TODO.md → 新敌人类型（扩展）
 - **scope**: `enemies.js` + 关卡少量投放
