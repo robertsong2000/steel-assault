@@ -9,22 +9,13 @@ import { LEVEL, LEVELS, setLevel, groundTopAt, drawBackground, drawTerrain, lase
 import { EnemyManager } from './enemies.js';
 import { Player } from './player.js';
 import { Boss } from './boss.js';
-import { YetiBoss } from './yeti.js';
-import { MechBoss } from './mech.js';
-import { HeliBoss } from './heli.js';
-import { LavaBeast } from './lavabeast.js';
-import { DrillBoss } from './drill.js';
-import { WardenBoss } from './warden.js';
-import { OverlordBoss } from './overlord.js';
+import { BOSS_CLASSES } from './bosses.js';
 import { drawHUD, drawTitle, drawPause, drawGameOver, drawVictory, drawStageBanner, drawSettings, REBIND_ACTIONS } from './hud.js';
 import { Assets } from './assets.js';
 import { statRow } from './combat.js';
 import { CombatSystem } from './combat-system.js';
 
 const STEP = 1 / 60;
-
-// Boss 注册表：关卡 def 的 boss 字段 → Boss 类
-const BOSS_CLASSES = { fortress: Boss, yeti: YetiBoss, mech: MechBoss, heli: HeliBoss, beast: LavaBeast, drill: DrillBoss, warden: WardenBoss, overlord: OverlordBoss };
 
 class Game {
   constructor(canvas) {
@@ -164,6 +155,7 @@ class Game {
     for (const t of LEVEL.turrets) this.enemies.spawnTurret(t.x, t.y);
     for (const s of LEVEL.snipers) this.enemies.spawnSniper(s.x, s.y);
     for (const g of LEVEL.grenadiers || []) this.enemies.spawnGrenadier(g.x, g.y);
+    for (const g of LEVEL.bombers || []) this.enemies.spawnBomber(g.x, g.y);
     for (const s of LEVEL.shielders || []) this.enemies.spawnShielder(s.x, s.y);
     for (const m of LEVEL.mortars || []) this.enemies.spawnMortar(m.x, m.y);
     for (const b of LEVEL.patrolbots || []) this.enemies.spawnPatrolbot(b.x, b.y);
@@ -360,6 +352,7 @@ class Game {
             mech: '提示：激光门启动时蹲下或跳过红色光束。',
             heli: '提示：侧移躲避扇形弹幕，优先攻击核心。',
             beast: '提示：跳过冲击波，别站在巨兽正下方。',
+            titan: '提示：躲开冲锋撞击，泰坦沉入岩浆时是无敌的。',
             drill: '提示：钻地出土会形成冲击圈，及时拉开距离。',
             warden: '提示：侧风会改变跳跃轨迹，贴近地面调整位置。',
             overlord: '提示：多阶段攻击间隙很短，留好护盾与补给。',
@@ -389,6 +382,10 @@ class Game {
           this.audio.ctx?.resume();    // 恢复音频
           this.audio.sfx('select');
         }
+        break;
+
+      case 'settings':
+        this.updateSettings();
         break;
 
       case 'gameover':
@@ -511,8 +508,8 @@ class Game {
         else if (t.type === 'flyers') this.enemies.spawnFlyers(t.n, this.camX);
         else if (t.type === 'jumpers') this.enemies.spawnJumpers(t.n, t.dir, this.camX);
         else if (t.type === 'rollers') this.enemies.spawnRollers(t.n, t.dir, this.camX);
-        else if (t.type === 'paras') this.enemies.spawnParas(t.n, this.camX);
         else if (t.type === 'snowballs') this.enemies.spawnSnowballs(t.n, t.dir, this.camX);
+        else if (t.type === 'paras') this.enemies.spawnParas(t.n, this.camX);
         else if (t.type === 'patrolbots') this.enemies.spawnPatrolbots(t.n, t.dir, this.camX);
       }
     }
@@ -568,6 +565,7 @@ class Game {
     if ((this.state === 'playing' || this.state === 'loading') && this.stageBanner > 0) drawStageBanner(ctx, LEVEL.name, this.stageBanner);
     if (this.state === 'loading') bigText(ctx, '加载关卡资源…', CFG.W / 2, 330, 24, '#d7f5ff');
     if (this.state === 'paused') drawPause(ctx, this);
+    else if (this.state === 'settings') drawSettings(ctx, this);
     else if (this.state === 'gameover') drawGameOver(ctx, this.score, this.hi);
     else if (this.state === 'victory') drawVictory(ctx, this.score, this.playTime, this.levelIdx < LEVELS.length - 1, this.boss?.clearText || '要塞已摧毁', this.stats, this.campaign);
   }

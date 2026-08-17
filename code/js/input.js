@@ -62,24 +62,78 @@ const PREVENT = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Spa
 const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA'];
 
 // ---- 手柄（Gamepad 标准映射）----
-const PAD_DEAD = 0.35;   // 摇杆死区
-// 按钮号 → 动作：十字键=方向 A=跳 B/X=射击 Start=开始 Select=设置 RB=静音
-const PAD_BTNS = {
-  12: 'up', 13: 'down', 14: 'left', 15: 'right',
-  0: 'jump', 1: 'shoot', 2: 'shoot', 9: 'start', 8: 'settings', 5: 'mute',
-};
+/** 摇杆死区：|axis| 不超过该值视为归零（含边界） */
+export const GAMEPAD_DEADZONE = 0.35;
+
+/** 单轴 → 方向（-1/0/+1）；非数值按 0 处理 */
+export function axisToDir(axis, deadzone = GAMEPAD_DEADZONE) {
+  const v = Number(axis);
+  if (!Number.isFinite(v)) return 0;
+  if (Math.abs(v) <= deadzone) return 0;
+  return v > 0 ? 1 : -1;
+}
+
+function buttonOn(buttons, index) {
+  const b = buttons?.[index];
+  if (b == null) return false;
+  if (typeof b === 'object') {
+    if (b.pressed) return true;
+    return typeof b.value === 'number' && b.value >= 0.5;
+  }
+  return !!b;
+}
+
+const EMPTY_ACTIONS = Object.freeze({
+  left: false, right: false, up: false, down: false,
+  jump: false, shoot: false, start: false, mute: false, settings: false, challenge: false,
+});
+
+/**
+ * W3C 标准映射手柄快照 → 动作语义（纯函数，便于单测）。
+ * 十字键=方向 A=跳 B/X/RB/RT=射击 Start=开始 Select=设置
+ */
+export function readGamepadActions(gp) {
+  const actions = { ...EMPTY_ACTIONS };
+  if (!gp || gp.connected === false) return actions;
+  const buttons = gp.buttons || [];
+  const axes = gp.axes || [];
+  const ax = axisToDir(axes[0]);
+  const ay = axisToDir(axes[1]);
+  if (ax < 0 || buttonOn(buttons, 14)) actions.left = true;
+  if (ax > 0 || buttonOn(buttons, 15)) actions.right = true;
+  if (ay < 0 || buttonOn(buttons, 12)) actions.up = true;
+  if (ay > 0 || buttonOn(buttons, 13)) actions.down = true;
+  if (buttonOn(buttons, 0)) actions.jump = true;                 // A / Cross
+  if (buttonOn(buttons, 1) || buttonOn(buttons, 2) || buttonOn(buttons, 5) || buttonOn(buttons, 7)) {
+    actions.shoot = true;                                        // B / X / RB / RT
+  }
+  if (buttonOn(buttons, 9)) actions.start = true;                // Start
+  if (buttonOn(buttons, 8)) actions.settings = true;             // Select / Back
+  return actions;
+}
+
+/** 取第一个已连接的手柄；跳过 getGamepads() 的空槽位 */
+export function pickGamepad(pads) {
+  if (!pads) return null;
+  for (const gp of pads) {
+    if (gp && gp.connected !== false) return gp;
+  }
+  return null;
+}
 
 export class Input {
   constructor() {
     this.down = new Set();
     this.pressed = new Set();
-    this.virtual = new Set();   // 触屏虚拟按键
-    this.padDown = new Set();    // 手柄按住的动作
-    this.padPressed = new Set(); // 手柄本帧按下（边沿，仅持续一帧）
+    this.virtual = new Set();     // 触屏虚拟按键
+    this.padDown = new Set();     // 手柄按住的动作
+    this.padPressed = new Set();  // 手柄本帧按下（边沿，仅持续一帧）
     this.gamepadCount = 0;
     this.konamiIdx = 0;
     this.onKonami = null;
-    window.addEventListener('keydown', (e) => {
+    const win = typeof window !== 'undefined' ? window : null;
+    if (!win?.addEventListener) return;
+    win.addEventListener('keydown', (e) => {
       if (!e.repeat) {
         this.pressed.add(e.code);
         this.trackKonami(e.code);
@@ -89,9 +143,9 @@ export class Input {
       this.down.add(e.code);
       if (PREVENT.has(e.code)) e.preventDefault();
     });
-    window.addEventListener('keyup', (e) => this.down.delete(e.code));
-    window.addEventListener('blur', () => this.clear());
-    window.addEventListener('gamepaddisconnected', () => { this.padDown.clear(); this.padPressed.clear(); this.gamepadCount = 0; });
+    win.addEventListener('keyup', (e) => this.down.delete(e.code));
+    win.addEventListener('blur', () => this.clear());
+    win.addEventListener('gamepaddisconnected', () => { this.padDown.clear(); this.padPressed.clear(); this.gamepadCount = 0; });
   }
 
   trackKonami(code) {
@@ -106,23 +160,27 @@ export class Input {
     }
   }
 
-  // 每帧轮询手柄，注入动作层语义（与触屏一致：不触发科乐美追踪）
-  pollGamepad() {
+  /**
+   * 每帧轮询手柄，注入动作层语义（与触屏一致：不触发科乐美追踪）。
+   * 可传入快照数组（单测用），缺省读 navigator.getGamepads()。
+   */
+  pollGamepad(list) {
+    let pads = list;
+    if (pads === undefined) {
+      try {
+        pads = (typeof navigator !== 'undefined' && navigator.getGamepads?.()) || [];
+      } catch {
+        pads = [];
+      }
+    }
     this.padPressed.clear();
     this.gamepadCount = 0;
     const next = new Set();
-    if (typeof navigator !== 'undefined' && navigator.getGamepads) {
-      for (const gp of navigator.getGamepads()) {
-        if (!gp || !gp.connected) continue;
-        this.gamepadCount++;
-        const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
-        if (ax < -PAD_DEAD) next.add('left');
-        if (ax > PAD_DEAD) next.add('right');
-        if (ay < -PAD_DEAD) next.add('up');
-        if (ay > PAD_DEAD) next.add('down');
-        for (const i in PAD_BTNS) {
-          if (gp.buttons[i] && gp.buttons[i].pressed) next.add(PAD_BTNS[i]);
-        }
+    for (const gp of pads || []) {
+      if (!gp || gp.connected === false) continue;
+      this.gamepadCount++;
+      for (const [name, on] of Object.entries(readGamepadActions(gp))) {
+        if (on) next.add(name);
       }
     }
     for (const a of next) if (!this.padDown.has(a)) this.padPressed.add(a);
@@ -154,11 +212,11 @@ export class Input {
 
   isDown(action) {
     return this.padDown.has(action)
-      || ACTION_KEYS[action].some((c) => this.down.has(c) || this.virtual.has(c));
+      || (ACTION_KEYS[action] || []).some((c) => this.down.has(c) || this.virtual.has(c));
   }
   wasPressed(action) {
     return this.padPressed.has(action)
-      || ACTION_KEYS[action].some((c) => this.pressed.has(c));
+      || (ACTION_KEYS[action] || []).some((c) => this.pressed.has(c));
   }
   endFrame() {
     this.pressed.clear();

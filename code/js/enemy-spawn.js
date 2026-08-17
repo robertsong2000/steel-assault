@@ -18,6 +18,7 @@ export const spawnTurret = (manager, x, y) => push(manager, { type: 'turret', x:
 export const spawnSniper = (manager, x, y) => push(manager, { type: 'sniper', x: x - 13, y: y - 40, w: 26, h: 40, hp: 2, state: 'hide', timer: rand(0.5, 1.2), aim: Math.PI });
 export const spawnDrone = (manager, carry, camX) => push(manager, { type: 'drone', x: camX + CFG.W + 60, y: 140, w: 36, h: 24, vx: -150, t: 0, baseY: rand(110, 170), hp: 1, carry });
 export const spawnGrenadier = (manager, x, y) => push(manager, { type: 'grenadier', x: x - 13, y: y - 42, w: 26, h: 42, hp: 2, timer: rand(1, 2), facing: -1, runT: rand(0, 1) });
+export const spawnBomber = (manager, x, y) => push(manager, { type: 'bomber', x: x - 13, y: y - 42, w: 26, h: 42, vx: 0, vy: 0, hp: 3, timer: rand(1, 2), facing: -1, runT: rand(0, 1), onGround: false });
 export const spawnShielder = (manager, x, y) => push(manager, { type: 'shielder', x: x - 14, y: y - 44, w: 28, h: 44, vx: 0, vy: 0, hp: 4, facing: -1, runT: 0, onGround: false });
 export function spawnFlyers(manager, n, camX) {
   for (let i = 0; i < n; i++) push(manager, { type: 'flyer', x: camX + CFG.W + 50 + i * 70, y: rand(120, 180), w: 30, h: 22, vx: -130, t: rand(0, 2), baseY: rand(110, 170), hp: 1, diving: false });

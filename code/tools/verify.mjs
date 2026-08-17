@@ -53,6 +53,6 @@ assert.equal(loadSave().unlocked, 5);
 assert.equal(resetGameSave().unlocked, 0);
 delete globalThis.localStorage;
 
-assert.equal(LEVELS.length, 8);
+assert.equal(LEVELS.length, 9);
 setLevel(0);
 console.log(`verify: ${Object.keys(FILES).length} assets, ${LEVELS.length} levels, 8x8 state isolation OK`);

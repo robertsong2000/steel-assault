@@ -49,11 +49,15 @@ export const LEVELS = [
       { x: 3160, y: G },
       { x: 4120, y: G },
     ],
+    bombers: [
+      { x: 980, y: G },
+    ],
     triggers: [
       { x: 500,  type: 'runners', n: 3, dir: -1 },
       { x: 950,  type: 'runners', n: 3, dir: -1 },
       { x: 1050, type: 'paras', n: 2 },
       { x: 1400, type: 'runners', n: 2, dir: 1 },
+      { x: 1550, type: 'patrolbots', n: 1, dir: -1 },
       { x: 1750, type: 'drone', carry: 'M' },
       { x: 2000, type: 'runners', n: 4, dir: -1 },
       { x: 2400, type: 'drone', carry: 'L' },
@@ -64,6 +68,7 @@ export const LEVELS = [
       { x: 3250, type: 'runners', n: 4, dir: -1 },
       { x: 3450, type: 'runners', n: 3, dir: 1 },
       { x: 3600, type: 'drone', carry: 'G' },
+      { x: 3700, type: 'patrolbots', n: 1, dir: -1 },
       { x: 3900, type: 'drone', carry: 'S' },
       { x: 4150, type: 'runners', n: 4, dir: -1 },
       { x: 4250, type: 'drone', carry: 'H' },
@@ -127,9 +132,12 @@ export const LEVELS = [
       // 滚雪球：雪原特色敌，出生点在开阔平地右侧，沿地面滚向玩家
       { x: 1250, type: 'snowballs', n: 2, dir: -1 },
       { x: 1400, type: 'jumpers', n: 2, dir: -1 },
+      { x: 1650, type: 'patrolbots', n: 1, dir: -1 },
       { x: 1800, type: 'runners', n: 3, dir: 1 },
+      { x: 1880, type: 'snowballs', n: 1, dir: -1 },
       { x: 2200, type: 'drone', carry: 'S' },
       { x: 2500, type: 'flyers', n: 2 },
+      { x: 2680, type: 'snowballs', n: 1, dir: -1 },
       { x: 2900, type: 'rollers', n: 2, dir: -1 },
       { x: 3100, type: 'drone', carry: 'L' },
       { x: 3190, type: 'snowballs', n: 2, dir: -1 },
@@ -190,6 +198,9 @@ export const LEVELS = [
     grenadiers: [
       { x: 2900, y: G },
       { x: 4600, y: G },
+    ],
+    bombers: [
+      { x: 2100, y: G },
     ],
     shielders: [
       { x: 1100, y: G },
@@ -377,7 +388,87 @@ export const LEVELS = [
     waters: [],
   },
   {
-    name: '第6关 熔岩洞窟',
+    name: '第6关 火山',
+    theme: 'volcano',
+    boss: 'titan',
+    ebulletMul: 1.2,      // 后半程再加压：敌弹提速 20%
+    width: 5800,
+    bossTriggerX: 4960,
+    wallX: 5510,
+    // 地貌性格：熔岩河谷（岩台攀爬 + 熔岩河 + 塌陷石桥）
+    solids: [
+      { x: 0,    y: G, w: 1100, h: 70, kind: 'ground' },
+      { x: 1280, y: G, w: 820,  h: 70, kind: 'ground' },
+      { x: 2300, y: G, w: 900,  h: 70, kind: 'ground' },
+      { x: 3400, y: G, w: 900,  h: 70, kind: 'ground' },
+      { x: 4500, y: G, w: 1300, h: 70, kind: 'ground' },
+      { x: 700,  y: 380, w: 180, h: 90,  kind: 'rock' },
+      { x: 1600, y: 370, w: 200, h: 100, kind: 'rock' },
+      { x: 2700, y: 390, w: 180, h: 80,  kind: 'rock' },
+      { x: 3800, y: 370, w: 200, h: 100, kind: 'rock' },
+      { x: 5100, y: 390, w: 160, h: 80,  kind: 'rock' },
+      { x: 5510, y: 0, w: 290, h: G, kind: 'wall' },
+    ],
+    oneways: [
+      { x: 500,  y: 340, w: 150, h: 14, kind: 'metal' },
+      { x: 1120, y: 400, w: 140, h: 14, kind: 'metal' },
+      { x: 1180, y: 330, w: 90,  h: 14, kind: 'crumble' },
+      { x: 2100, y: 400, w: 180, h: 14, kind: 'metal' },
+      { x: 2160, y: 320, w: 100, h: 14, kind: 'crumble' },
+      { x: 2550, y: 280, w: 140, h: 14, kind: 'metal' },
+      { x: 3220, y: 400, w: 160, h: 14, kind: 'metal' },
+      { x: 3280, y: 330, w: 90,  h: 14, kind: 'crumble' },
+      { x: 3850, y: 280, w: 140, h: 14, kind: 'metal' },
+      { x: 4320, y: 400, w: 160, h: 14, kind: 'metal' },
+      { x: 4780, y: 340, w: 150, h: 14, kind: 'metal' },
+      { x: 5200, y: 300, w: 150, h: 14, kind: 'metal' },
+    ],
+    turrets: [
+      { x: 790,  y: 380 },
+      { x: 1700, y: 370 },
+      { x: 2620, y: 280 },
+      { x: 3870, y: 370 },
+    ],
+    snipers: [
+      { x: 1500, y: G },
+      { x: 3600, y: G },
+      { x: 4900, y: G },
+    ],
+    grenadiers: [
+      { x: 900,  y: G },
+      { x: 2800, y: G },
+      { x: 4700, y: G },
+    ],
+    shielders: [
+      { x: 1900, y: G },
+      { x: 4000, y: G },
+    ],
+    triggers: [
+      { x: 350,  type: 'runners', n: 3, dir: -1 },
+      { x: 700,  type: 'rollers', n: 2, dir: -1 },
+      { x: 1000, type: 'drone', carry: 'M' },
+      { x: 1300, type: 'paras', n: 2 },
+      { x: 1650, type: 'jumpers', n: 2, dir: -1 },
+      { x: 1950, type: 'drone', carry: 'S' },
+      { x: 2250, type: 'flyers', n: 2 },
+      { x: 2550, type: 'runners', n: 3, dir: -1 },
+      { x: 2850, type: 'drone', carry: 'L' },
+      { x: 3100, type: 'rollers', n: 2, dir: -1 },
+      { x: 3400, type: 'drone', carry: 'B' },
+      { x: 3650, type: 'jumpers', n: 2, dir: -1 },
+      { x: 3900, type: 'drone', carry: 'G' },
+      { x: 4150, type: 'flyers', n: 3 },
+      { x: 4400, type: 'runners', n: 3, dir: -1 },
+      { x: 4650, type: 'drone', carry: 'H' },
+      { x: 4850, type: 'drone', carry: 'M' },
+      { x: 5000, type: 'drone', carry: 'F' },
+      { x: 5200, type: 'rollers', n: 2, dir: -1 },
+    ],
+    // 熔岩河（坑底致死，与丛林水面相同判定）
+    waters: [[1100, 1280], [2120, 2300], [3200, 3400], [4300, 4500]],
+  },
+  {
+    name: '第7关 熔岩洞窟',
     theme: 'cave',
     boss: 'drill',
     ebulletMul: 1.2,      // 后半程加压：敌弹提速
@@ -458,7 +549,7 @@ export const LEVELS = [
     waters: [[1000, 1150], [1900, 2150], [3000, 3120], [3900, 4200]],
   },
   {
-    name: '第7关 暴雨夜港',
+    name: '第8关 暴雨夜港',
     theme: 'night',
     boss: 'warden',
     ebulletMul: 1.3,      // 后半程加压：敌弹提速
@@ -555,7 +646,7 @@ export const LEVELS = [
     waters: [[1100, 1260], [2300, 2620], [3500, 3660], [4400, 4600]],
   },
   {
-    name: '第8关 天穹空间站',
+    name: '第9关 天穹空间站',
     theme: 'space',
     boss: 'overlord',
     ebulletMul: 1.45,     // 终关：敌弹大幅提速
@@ -758,6 +849,7 @@ export function drawBackground(ctx, camX, t) {
   if (LEVEL.theme === 'base') return drawBaseBackground(ctx, camX, t);
   if (LEVEL.theme === 'sky') return drawSkyBackground(ctx, camX, t);
   if (LEVEL.theme === 'desert') return drawDesertBackground(ctx, camX, t);
+  if (LEVEL.theme === 'volcano') return drawVolcanoBackground(ctx, camX, t);
   if (LEVEL.theme === 'cave') return drawCaveBackground(ctx, camX, t);
   if (LEVEL.theme === 'night') return drawNightBackground(ctx, camX, t);
   if (LEVEL.theme === 'space') return drawSpaceBackground(ctx, camX, t);
@@ -1001,6 +1093,44 @@ function drawCaveBackground(ctx, camX, t) {
   ctx.globalAlpha = 1;
 }
 
+// ---------------- 火山夜背景 ----------------
+function drawVolcanoBackground(ctx, camX, t) {
+  const grad = ctx.createLinearGradient(0, 0, 0, CFG.H);
+  grad.addColorStop(0, '#1a0a12');
+  grad.addColorStop(0.45, '#4a1820');
+  grad.addColorStop(0.8, '#8a2a18');
+  grad.addColorStop(1, '#c94a20');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, CFG.W, CFG.H);
+  // 远火山剪影
+  drawRidge(ctx, camX * 0.12, 310, 160, '#2a1014', 0.8);
+  drawRidge(ctx, camX * 0.28, 390, 120, '#1c0c10', 1.3);
+  // 火山口辉光
+  const glowX = 640 - camX * 0.08;
+  ctx.fillStyle = 'rgba(255,90,30,0.28)';
+  ctx.beginPath();
+  ctx.arc(glowX, 300, 70, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ff6a28';
+  ctx.beginPath();
+  ctx.arc(glowX, 318, 22, 0, Math.PI * 2);
+  ctx.fill();
+  // 热霾
+  const fog = ctx.createLinearGradient(0, CFG.GROUND_Y - 200, 0, CFG.GROUND_Y);
+  fog.addColorStop(0, 'rgba(80,20,10,0)');
+  fog.addColorStop(1, 'rgba(80,20,10,0.35)');
+  ctx.fillStyle = fog;
+  ctx.fillRect(0, CFG.GROUND_Y - 200, CFG.W, 200);
+  // 升腾火星
+  ctx.fillStyle = '#ff9a50';
+  for (let i = 0; i < 50; i++) {
+    const x = (hash01(i, 5) * CFG.W + Math.sin(t * 0.7 + i) * 12) % CFG.W;
+    const y = (CFG.H - (hash01(i, 7) * CFG.H + t * (40 + hash01(i, 11) * 80)) % CFG.H);
+    ctx.globalAlpha = 0.35 + hash01(i, 13) * 0.5;
+    ctx.fillRect(x, y, hash01(i, 17) > 0.6 ? 3 : 2, 2);
+  }
+  ctx.globalAlpha = 1;
+
 // ---------------- 暴雨夜港背景（全代码手绘，无素材） ----------------
 function drawNightBackground(ctx, camX, t) {
   // 夜空
@@ -1150,7 +1280,7 @@ function drawSpaceBackground(ctx, camX, t) {
     ctx.restore();
   }
 }
-
+}
 // ---------------- 基地内部背景 ----------------
 function drawBaseBackground(ctx, camX, t) {
   const bg = Assets.get('bg_base');
@@ -1338,6 +1468,7 @@ function drawGround(ctx, s) {
   if (LEVEL.theme === 'cave') return drawCaveGround(ctx, s);
   if (LEVEL.theme === 'base' || LEVEL.theme === 'sky' || LEVEL.theme === 'night' || LEVEL.theme === 'space') return drawBaseGround(ctx, s);
   if (LEVEL.theme === 'desert') return drawSandGround(ctx, s);
+  if (LEVEL.theme === 'volcano') return drawVolcanoGround(ctx, s);
   const pat = Assets.pattern(ctx, 'tile_ground');
   if (pat) {
     ctx.fillStyle = pat;
@@ -1400,6 +1531,17 @@ function drawSandGround(ctx, s) {
   for (let x = s.x; x < s.x + s.w; x += 18) {
     if (hash01(x, s.y) > 0.55) rect(ctx, x, s.y - 4, 6, 4, '#e8c878');
     if (hash01(x, 99) > 0.6) rect(ctx, x + 6, s.y + 24 + hash01(x, 5) * 30, 5, 4, '#8a5f2c');
+  }
+}
+
+// 火山岩地：玄武岩顶 + 熔岩裂纹
+function drawVolcanoGround(ctx, s) {
+  rect(ctx, s.x, s.y, s.w, s.h, '#3a2a26');
+  rect(ctx, s.x, s.y, s.w, 10, '#5a4038');
+  rect(ctx, s.x, s.y + 10, s.w, 4, '#2e201c');
+  for (let x = s.x; x < s.x + s.w; x += 22) {
+    if (hash01(x, s.y) > 0.62) rect(ctx, x, s.y + 16, 3, 18 + hash01(x, 7) * 16, '#e8552a');
+    if (hash01(x, 99) > 0.7) rect(ctx, x + 8, s.y - 4, 5, 4, '#c94a20');
   }
 }
 
@@ -1599,6 +1741,22 @@ function drawWater(ctx, camX, t, x0, x1) {
     for (let x = x0; x < x1; x += 16) {
       const yy = 502 + Math.sin(t * 3 + x * 0.09) * 3;
       ctx.fillRect(x, yy, 10, 3);
+    }
+    return;
+  }
+  if (LEVEL.theme === 'volcano') {
+    // 熔岩河：橙红浆面 + 气泡
+    rect(ctx, x0, 500, x1 - x0, 40, '#5a1208');
+    ctx.fillStyle = '#e8552a';
+    for (let x = x0; x < x1; x += 16) {
+      const yy = 502 + Math.sin(t * 4 + x * 0.08) * 3;
+      ctx.fillRect(x, yy, 10, 3);
+    }
+    ctx.fillStyle = '#ffc46b';
+    for (let i = 0; i < 5; i++) {
+      const bx = x0 + hash01(i, x0) * (x1 - x0);
+      const by = 506 + ((t * 22 + i * 15) % 28);
+      ctx.fillRect(bx, by, 3, 3);
     }
     return;
   }

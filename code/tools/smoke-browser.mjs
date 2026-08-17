@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { LEVELS } from '../js/level.js';
 
 const cases = [
   { name: 'desktop', viewport: { width: 1280, height: 900 }, hasTouch: false, deviceScaleFactor: 1 },
@@ -72,14 +73,14 @@ try {
         g.state = 'title'; g.boss = null; g.player.x = 120;
         return { shown: typeof hint === 'string' && hint.length > 0, hint };
       });
-      newGamePlusCheck = await page.evaluate(() => {
+      newGamePlusCheck = await page.evaluate((last) => {
         const g = window.__game;
-        g.levelIdx = 7; g.campaign.levels = Array.from({ length: 7 }, (_, level) => ({ level }));
+        g.levelIdx = last; g.campaign.levels = Array.from({ length: last }, (_, level) => ({ level }));
         g.victory(); g.input.pressed.add('Enter'); g.input.pressed.add('KeyN'); g.update(1 / 60);
         const result = { levelIdx: g.levelIdx, newGamePlus: g.campaign.newGamePlus, difficulty: g.difficulty, state: g.state };
         g.challengeIndex = 0; g.levelIdx = 0; g.unlocked = 0; g.state = 'title';
         return result;
-      });
+      }, LEVELS.length - 1);
       await page.keyboard.press('KeyC');
       await page.keyboard.press('Enter');
       await page.waitForTimeout(80);
