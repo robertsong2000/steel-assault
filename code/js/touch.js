@@ -27,20 +27,27 @@ export function setupTouch(input) {
     el.textContent = label;
     const down = (e) => {
       e.preventDefault();
+      if (e.pointerId !== undefined) el.setPointerCapture?.(e.pointerId);
       el.classList.add('on');
       input.virtualDown(code);
     };
     const up = (e) => {
       e.preventDefault();
+      if (e.pointerId !== undefined && el.hasPointerCapture?.(e.pointerId)) el.releasePointerCapture(e.pointerId);
       el.classList.remove('on');
       input.virtualUp(code);
     };
-    el.addEventListener('touchstart', down, { passive: false });
-    el.addEventListener('touchend', up, { passive: false });
-    el.addEventListener('touchcancel', up, { passive: false });
+    // Pointer Events 覆盖触控、鼠标和触控笔，并保留多点触控的独立 pointerId。
+    el.addEventListener('pointerdown', down, { passive: false });
+    el.addEventListener('pointerup', up, { passive: false });
+    el.addEventListener('pointercancel', up, { passive: false });
+    el.addEventListener('lostpointercapture', up, { passive: false });
     pad.appendChild(el);
   }
 
   // 页面失焦时清空，防止按键卡住
-  window.addEventListener('blur', () => input.virtualClear());
+  window.addEventListener('blur', () => {
+    input.virtualClear();
+    pad.querySelectorAll('.tbtn.on').forEach((el) => el.classList.remove('on'));
+  });
 }

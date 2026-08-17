@@ -1,6 +1,6 @@
 // ===================== 图片资源加载器 =====================
 // 所有生成素材集中加载；加载失败时回退 null，渲染层自动退回代码手绘。
-const FILES = {
+export const FILES = {
   // 玩家（2x2 帧：跑A/跑B/跳/蹲）
   player_0: 'assets/img/player_0.webp',
   player_1: 'assets/img/player_1.webp',
@@ -15,12 +15,20 @@ const FILES = {
   turret: 'assets/img/turret.webp',
   sniper: 'assets/img/sniper.webp',
   drone: 'assets/img/drone.webp',
+  // 新敌人（第 2/6/7/8 关）
+  mortar: 'assets/img/mortar.webp',
+  snowball: 'assets/img/snowball.webp',
+  patrolbot: 'assets/img/patrolbot.webp',
   // Boss
   boss_core: 'assets/img/boss_core.webp',
   boss_cannon: 'assets/img/boss_cannon.webp',
   yeti: 'assets/img/yeti.webp',
   mech: 'assets/img/mech.webp',
   heli: 'assets/img/heli.webp',
+  drill: 'assets/img/drill.webp',
+  warden: 'assets/img/warden.webp',
+  overlord: 'assets/img/overlord.webp',
+  overlord_pod: 'assets/img/overlord_pod.webp',
   // 武器徽章
   emblem_R: 'assets/img/emblem_R.webp',
   emblem_M: 'assets/img/emblem_M.webp',
@@ -73,19 +81,50 @@ const FILES = {
   tile_sand: 'assets/img/tile_sand.webp',
 };
 
+// 首屏只加载标题、玩家、基础敌人、通用弹药和第 1 关主题；其余主题在进入关卡前预取。
+const COMMON_NAMES = [
+  'player_0', 'player_1', 'player_2', 'player_3',
+  'runner_0', 'runner_1', 'runner_2', 'runner_3', 'turret', 'sniper', 'drone',
+  'boss_core', 'boss_cannon', 'emblem_R', 'emblem_M', 'emblem_S', 'emblem_L', 'emblem_G', 'emblem_H', 'emblem_F', 'emblem_B',
+  'roller', 'bullet_laser', 'bullet_missile', 'bullet_grenade', 'flame_0', 'flame_1', 'flame_2', 'flame_3',
+  'explode_0', 'explode_1', 'explode_2', 'explode_3', 'tile_ground', 'tile_rock', 'tile_metal', 'tile_bridge',
+  'bg_sky', 'bg_mountains', 'bg_jungle',
+];
+const THEME_NAMES = {
+  snow: ['yeti', 'snowball', 'icewave', 'bg_snow_sky', 'bg_snow_mountains', 'bg_snow_trees', 'tile_snow_ground'],
+  base: ['mech', 'mortar', 'bg_base'],
+  sky: ['heli', 'bg_sky4'],
+  desert: ['lavabeast', 'sandworm', 'bg_desert', 'bg_ruins', 'tile_sand'],
+  cave: ['drill'],
+  night: ['warden', 'patrolbot'],
+  space: ['overlord', 'overlord_pod'],
+};
+
 export const Assets = {
   map: {},
   patterns: {},
+  failed: [],
 
-  load() {
-    const jobs = Object.entries(FILES).map(([name, src]) =>
-      new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => { this.map[name] = img; resolve(); };
-        img.onerror = () => { this.map[name] = null; resolve(); }; // 缺失素材不阻塞游戏
-        img.src = src;
-      })
-    );
+  commonNames() { return [...COMMON_NAMES]; },
+  levelNames(level) { return [...(THEME_NAMES[level?.theme] || []), ...(level?.boss ? [level.boss] : [])].filter((name, i, list) => list.indexOf(name) === i && FILES[name]); },
+
+  load(names = Object.keys(FILES), onProgress = null) {
+    this.failed = [];
+    let settled = 0;
+    const total = names.length;
+    const report = () => onProgress?.({ loaded: settled, total, failed: this.failed.length });
+    report();
+    const jobs = names.map((name) => {
+      const src = FILES[name];
+      return new Promise((resolve) => {
+        new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => { this.map[name] = img; resolve(); };
+          img.onerror = () => { this.map[name] = null; this.failed.push(name); resolve(); }; // 缺失素材不阻塞游戏
+          img.src = src;
+        }).then(() => { settled++; report(); resolve(); });
+      });
+    });
     return Promise.all(jobs).then(() => {
       this.recolorPlayerSnow();
       // 雪原新敌人换色：雪球兵（跑男→冰蓝）/ 寒冰无人机（补给机→青）
@@ -119,7 +158,12 @@ export const Assets = {
           if (this.map[`${p}_${i}`]) this.map[`${p}_${i}`] = this.outlineSprite(this.map[`${p}_${i}`]);
         }
       }
+      return { loaded: total - this.failed.length, failed: [...this.failed], total };
     });
+  },
+
+  retryFailed(onProgress = null) {
+    return this.failed.length ? this.load([...this.failed], onProgress) : Promise.resolve({ loaded: 0, failed: [], total: 0 });
   },
 
   // 雪原主题：玩家绿色军装 → 亮橙冬装（运行时换色，无需新素材）

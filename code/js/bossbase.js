@@ -3,6 +3,9 @@
 // damage 核心扣分模式（killScore 为子类字段）。子类只保留各自的移动/攻击/绘制逻辑。
 import { rand } from './utils.js';
 
+// 竞技场左边界内边距（Boss 墙左侧活动范围）：钻地破坏王/港口守望者/天穹主脑共用
+export const ARENA_LEFT_PAD = 680;
+
 export class BaseBoss {
   constructor() {
     this.cannons = [];
@@ -18,6 +21,16 @@ export class BaseBoss {
     this.dyingDuration = 1.8;       // 演出总时长
     this.dyingShake = 6;            // 每次爆炸震屏强度
     this.killScore = 5000;          // 击杀分数（子类覆写）
+    this.difficulty = { bossHp: 1, bossSpeed: 1, supply: 1 };
+  }
+
+  applyDifficulty(profile = {}) {
+    this.difficulty = { ...this.difficulty, ...profile };
+    if (this.core) {
+      const ratio = this.difficulty.bossHp || 1;
+      this.core.max *= ratio;
+      this.core.hp *= ratio;
+    }
   }
 
   // 半血狂暴判断

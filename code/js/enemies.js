@@ -1,8 +1,9 @@
 // ===================== 敌人 & 敌方子弹 & 武器道具 =====================
 import { CFG, WEAPON_COLOR } from './config.js';
-import { rand, chance, clamp, overlap, physicsMove, rect } from './utils.js';
+import { rand, chance, overlap, physicsMove, rect } from './utils.js';
 import { LEVEL, groundTopAt } from './level.js';
 import { Assets, drawSprite } from './assets.js';
+import * as Spawn from './enemy-spawn.js';
 
 // 直射敌弹速度统一收口：基础速度 × 关卡弹速倍率 × 难度倍率（所有直射弹都必须经过这里；
 // 弹道解算弹 vx=dx/T（雪球/齐射/火球/投弹）乘倍率会破坏落点解算，不在此列）
@@ -21,103 +22,35 @@ export class EnemyManager {
     this.powerups.length = 0;
   }
 
-  // ---- 生成 ----
-  spawnRunners(n, dir, camX) {
-    for (let i = 0; i < n; i++) {
-      let x = dir < 0 ? camX + CFG.W + 40 + i * 56 : camX - 40 - i * 56;
-      x = Math.min(x, CFG.ARENA_WALL_X - 30); // 防止刷进 Boss 墙里
-      const top = groundTopAt(x, { safe: true }) ?? CFG.GROUND_Y;
-      this.list.push({
-        type: 'runner', x, y: top - 42, w: 24, h: 42,
-        vx: 0, vy: 0, dir, hp: 1, runT: rand(0, 1), onGround: false,
-      });
+  // ---- 生成（委托到 EnemySpawnSystem） ----
+  spawnRunners(n, dir, camX) { Spawn.spawnRunners(this, n, dir, camX); }
+  spawnTurret(x, y) { Spawn.spawnTurret(this, x, y); }
+  spawnSniper(x, y) { Spawn.spawnSniper(this, x, y); }
+  spawnDrone(carry, camX) { Spawn.spawnDrone(this, carry, camX); }
+
+  spawnGrenadier(x, y) { Spawn.spawnGrenadier(this, x, y); }
+
+  spawnShielder(x, y) { Spawn.spawnShielder(this, x, y); }
+  spawnFlyers(n, camX) { Spawn.spawnFlyers(this, n, camX); }
+  spawnJumpers(n, dir, camX) { Spawn.spawnJumpers(this, n, dir, camX); }
+  spawnRollers(n, dir, camX) { Spawn.spawnRollers(this, n, dir, camX); }
+  spawnParas(n, camX) { Spawn.spawnParas(this, n, camX); }
+  spawnMortar(x, y) { Spawn.spawnMortar(this, x, y); }
+  spawnSnowballs(n, dir, camX) { Spawn.spawnSnowballs(this, n, dir, camX); }
+  spawnPatrolbot(x, y) { Spawn.spawnPatrolbot(this, x, y); }
+  spawnPatrolbots(n, dir, camX) { Spawn.spawnPatrolbots(this, n, dir, camX); }
+  spawnSandworm(x, y) { Spawn.spawnSandworm(this, x, y); }
+
+  // 迫击炮榴弹爆炸：小 AOE + 特效（落地触发）
+  explodeShell(b, world) {
+    world.particles.explosion(b.x, b.y, 0.8);
+    world.audio.sfx('boom');
+    world.shake(4);
+    const p = world.player;
+    if (!p.dead) {
+      const dx = p.x + p.w / 2 - b.x, dy = p.y + p.h / 2 - b.y;
+      if (dx * dx + dy * dy < 70 * 70) world.killPlayer();
     }
-  }
-
-  spawnTurret(x, y) {
-    this.list.push({ type: 'turret', x: x - 18, y: y - 34, w: 36, h: 34, hp: 3, timer: rand(0.6, 1.6), flash: 0, aim: Math.PI });
-  }
-
-  spawnSniper(x, y) {
-    this.list.push({ type: 'sniper', x: x - 13, y: y - 40, w: 26, h: 40, hp: 2, state: 'hide', timer: rand(0.5, 1.2), aim: Math.PI });
-  }
-
-  spawnDrone(carry, camX) {
-    this.list.push({
-      type: 'drone', x: camX + CFG.W + 60, y: 140, w: 36, h: 24,
-      vx: -150, t: 0, baseY: rand(110, 170), hp: 1, carry,
-    });
-  }
-
-  // 雪球兵：原地抛抛物线雪球
-  spawnGrenadier(x, y) {
-    this.list.push({
-      type: 'grenadier', x: x - 13, y: y - 42, w: 26, h: 42,
-      hp: 2, timer: rand(1.0, 2.0), facing: -1, runT: rand(0, 1),
-    });
-  }
-
-  // 盾牌兵：正面防弹，缓慢逼近
-  spawnShielder(x, y) {
-    this.list.push({
-      type: 'shielder', x: x - 14, y: y - 44, w: 28, h: 44,
-      vx: 0, vy: 0, hp: 4, facing: -1, runT: 0, onGround: false,
-    });
-  }
-
-  // 寒冰无人机：正弦飞行，靠近后俯冲
-  spawnFlyers(n, camX) {
-    for (let i = 0; i < n; i++) {
-      this.list.push({
-        type: 'flyer', x: camX + CFG.W + 50 + i * 70, y: rand(120, 180), w: 30, h: 22,
-        vx: -130, t: rand(0, 2), baseY: rand(110, 170), hp: 1, diving: false,
-      });
-    }
-  }
-
-  // 蛙跳兵：连续高跳逼近
-  spawnJumpers(n, dir, camX) {
-    for (let i = 0; i < n; i++) {
-      let x = dir < 0 ? camX + CFG.W + 40 + i * 64 : camX - 40 - i * 64;
-      x = Math.min(x, CFG.ARENA_WALL_X - 30);
-      const top = groundTopAt(x, { safe: true }) ?? CFG.GROUND_Y;
-      this.list.push({
-        type: 'jumper', x, y: top - 42, w: 24, h: 42,
-        vx: 0, vy: 0, dir, hp: 1, runT: rand(0, 1), jumpT: rand(0.3, 0.9), onGround: false,
-      });
-    }
-  }
-
-  // 自爆滚雷：高速滚向玩家，靠近后引爆
-  spawnRollers(n, dir, camX) {
-    for (let i = 0; i < n; i++) {
-      let x = dir < 0 ? camX + CFG.W + 40 + i * 48 : camX - 40 - i * 48;
-      x = Math.min(x, CFG.ARENA_WALL_X - 30);
-      const top = groundTopAt(x, { safe: true }) ?? CFG.GROUND_Y;
-      this.list.push({
-        type: 'roller', x, y: top - 22, w: 22, h: 22,
-        vx: 0, vy: 0, hp: 1, fuse: -1, rollT: 0, onGround: false,
-      });
-    }
-  }
-
-  // 空降兵：降落伞落下，落地后站射
-  spawnParas(n, camX) {
-    for (let i = 0; i < n; i++) {
-      const x = clamp(camX + 200 + i * 180 + rand(-40, 40), camX + 60, camX + CFG.W - 60);
-      this.list.push({
-        type: 'para', x, y: -50 - i * 60, w: 24, h: 42,
-        vx: 0, vy: 0, hp: 2, state: 'fall', swayT: rand(0, 2), timer: rand(0.8, 1.6), aim: Math.PI, facing: -1, runT: 0,
-      });
-    }
-  }
-
-  // 沙虫：埋伏沙下，玩家靠近破土突袭
-  spawnSandworm(x, y) {
-    this.list.push({
-      type: 'worm', x: x - 16, y: y - 48, w: 32, h: 48,
-      vx: 0, vy: 0, hp: 3, state: 'hide', timer: rand(0.4, 1.2), facing: -1, onGround: false,
-    });
   }
 
   // 滚雷引爆（自爆 / 被打爆）
@@ -167,9 +100,15 @@ export class EnemyManager {
       return true;
     }
     const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
-    world.particles.explosion(cx, cy, 1);
+    if (e.type === 'snowball') {
+      // 雪球被打碎：碎雪四溅
+      world.particles.sparks(cx, cy, 18, '#dff0ff');
+      world.particles.sparks(cx, cy, 8, '#ffffff');
+    } else {
+      world.particles.explosion(cx, cy, 1);
+    }
     world.audio.sfx('explode');
-    const scoreMap = { runner: 100, sniper: 200, turret: 300, drone: 150, grenadier: 250, shielder: 300, flyer: 150, jumper: 100, para: 200, worm: 300 };
+    const scoreMap = { runner: 100, sniper: 200, turret: 300, drone: 150, grenadier: 250, shielder: 300, flyer: 150, jumper: 100, para: 200, worm: 300, mortar: 350, snowball: 150, patrolbot: 250 };
     const sc = scoreMap[e.type] || 100;
     world.addScore(sc, cx, cy);
     if (e.type === 'drone' && e.carry) this.spawnPowerup(cx, cy, e.carry);
@@ -383,6 +322,77 @@ export class EnemyManager {
           }
           break;
         }
+        case 'mortar': {
+          const cx = e.x + 14, cy = e.y + 12;
+          const dx = px - cx;
+          e.facing = dx < 0 ? -1 : 1;
+          e.runT += dt;
+          // 射程内（太近不打，避免炸到自己）
+          if (Math.abs(dx) < 640 && Math.abs(dx) > 90 && !player.dead) {
+            e.timer -= dt;
+            if (e.timer <= 0) {
+              // 高弧线榴弹：按飞行时间解算初速度（弹道弹，不走 ebSpeed）
+              const T = rand(1.5, 1.9), g = 900;
+              const vy = (py - cy - 0.5 * g * T * T) / T;
+              this.bullets.push({ x: cx, y: cy, vx: dx / T, vy, r: 5, grav: g, kind: 'shell' });
+              world.audio.sfx('eshoot');
+              e.timer = rand(3.4, 4.4);
+            }
+          }
+          break;
+        }
+        case 'snowball': {
+          e.vx = e.dir * 170;
+          e.vy = Math.min(e.vy + CFG.GRAV * dt, CFG.MAX_FALL);
+          physicsMove(e, LEVEL.solids, LEVEL.oneways, dt);
+          e.rollT += dt;
+          // 撞墙碎裂
+          if (e.hitWall) {
+            world.particles.sparks(e.x + 18, e.y + 18, 14, '#dff0ff');
+            e.remove = true;
+            break;
+          }
+          if (e.x < camX - 140 || e.x > camX + CFG.W + 200 || e.y > CFG.H + 100) e.remove = true;
+          break;
+        }
+        case 'patrolbot': {
+          const dx = px - (e.x + 14);
+          if (e.state === 'shoot') {
+            // 发现玩家：停下点射 2-3 发
+            e.vx = 0;
+            e.timer -= dt;
+            if (e.timer <= 0) {
+              this.fireAimed(e.x + 14 + e.facing * 18, e.y + 18, px, py);
+              world.audio.sfx('eshoot');
+              e.burst--;
+              e.timer = 0.22;
+              if (e.burst <= 0) { e.state = 'patrol'; e.timer = rand(0.8, 1.4); }
+            }
+          } else {
+            e.timer -= dt;   // 射击冷却
+            e.vx = e.dir * 70;
+            e.hitWall = false;
+            e.vy = Math.min(e.vy + CFG.GRAV * dt, CFG.MAX_FALL);
+            physicsMove(e, LEVEL.solids, LEVEL.oneways, dt);
+            e.facing = e.dir;
+            if (e.onGround) e.runT += dt;
+            // 撞墙或平台边缘：掉头
+            if (e.hitWall) e.dir *= -1;
+            else if (e.onGround) {
+              const ahead = groundTopAt(e.x + 14 + e.dir * 22);
+              if (ahead === null || ahead - (e.y + e.h) > 30) e.dir *= -1;
+            }
+            // 同高度带内发现玩家：停下点射
+            if (e.timer <= 0 && !player.dead && Math.abs(dx) < 360 && Math.abs(py - (e.y + 20)) < 60) {
+              e.state = 'shoot';
+              e.facing = dx < 0 ? -1 : 1;
+              e.burst = chance(0.5) ? 3 : 2;
+              e.timer = 0.25;
+            }
+          }
+          if (e.x < camX - 140 || e.y > CFG.H + 100) e.remove = true;
+          break;
+        }
       }
     }
     this.list = this.list.filter((e) => !e.remove);
@@ -401,7 +411,8 @@ export class EnemyManager {
       else if (b.kind !== 'wave') {
         for (const s of LEVEL.solids) {
           if (b.x > s.x && b.x < s.x + s.w && b.y > s.y && b.y < s.y + s.h) {
-            if (b.kind === 'snow' || b.kind === 'ice') world.particles.sparks(b.x, b.y, 6, '#dff0ff');
+            if (b.kind === 'shell') this.explodeShell(b, world);
+            else if (b.kind === 'snow' || b.kind === 'ice') world.particles.sparks(b.x, b.y, 6, '#dff0ff');
             else world.particles.sparks(b.x, b.y, 4, '#ffca7a');
             b.remove = true;
             break;
@@ -445,6 +456,9 @@ export class EnemyManager {
       else if (e.type === 'roller') drawRoller(ctx, e, time);
       else if (e.type === 'para') drawPara(ctx, e, time);
       else if (e.type === 'worm') drawWorm(ctx, e, time);
+      else if (e.type === 'mortar') drawMortar(ctx, e);
+      else if (e.type === 'snowball') drawSnowball(ctx, e);
+      else if (e.type === 'patrolbot') drawPatrolbot(ctx, e, time);
       // 受击白闪
       if (e.hitFlash > 0) {
         ctx.save();
@@ -476,6 +490,13 @@ export class EnemyManager {
         ctx.beginPath();
         ctx.arc(b.x - 2, b.y - 3, 4, 0, Math.PI * 2);
         ctx.fill();
+      } else if (b.kind === 'shell') {
+        // 榴弹：深色弹头 + 引信闪烁
+        ctx.fillStyle = '#3c404e';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        rect(ctx, b.x - 2, b.y - 2, 4, 4, Math.sin(time * 20) > 0 ? '#ffd76a' : '#8f95ab');
       } else if (b.kind === 'fire') {
         // 火球：橙红摇曳
         const fl = Math.sin(b.x * 0.3 + b.y * 0.2) * 2;
@@ -828,6 +849,87 @@ function drawWorm(ctx, e, time) {
   ctx.arc(x + 16, y + 10, 7, 0, Math.PI * 2);
   ctx.fill();
   rect(ctx, x + (e.facing > 0 ? 22 : 6), y + 2, 4, 4, '#ffe95a');
+}
+
+// 迫击炮兵：深绿投弹手 + 斜置迫击炮管
+function drawMortar(ctx, e) {
+  const img = Assets.get('mortar');
+  if (img) {
+    drawSprite(ctx, img, e.x - 8, e.y - 4, e.w + 16, e.h + 4, { flip: e.facing > 0 });
+    return;
+  }
+  const cx = e.x + 14;
+  // 身体
+  rect(ctx, cx - 8, e.y + 12, 16, 18, '#4a6e3c');
+  rect(ctx, cx - 8, e.y + 12, 16, 5, '#38542e');
+  // 头
+  rect(ctx, cx - 6, e.y, 12, 12, '#f0c090');
+  rect(ctx, cx - 7, e.y - 2, 14, 6, '#2e4626');
+  // 腿
+  rect(ctx, cx - 6, e.y + 30, 6, 16, '#2e4626');
+  rect(ctx, cx + 1, e.y + 30, 6, 16, '#38542e');
+  // 迫击炮管（朝向来敌方向斜指）
+  ctx.save();
+  ctx.translate(cx + e.facing * 6, e.y + 22);
+  ctx.rotate(e.facing * 0.8);
+  rect(ctx, -3, -18, 6, 20, '#2b2b33');
+  rect(ctx, -4, -20, 8, 4, '#3c3e4a');
+  ctx.restore();
+}
+
+// 滚雪球：白色大雪球 + 滚动纹路
+function drawSnowball(ctx, e) {
+  const img = Assets.get('snowball');
+  const cx = e.x + 18, cy = e.y + 18;
+  if (img) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(e.rollT * 6 * e.dir);
+    ctx.drawImage(img, -20, -20, 40, 40);
+    ctx.restore();
+    return;
+  }
+  ctx.fillStyle = '#f4faff';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 17, 0, Math.PI * 2);
+  ctx.fill();
+  // 滚动纹路
+  ctx.strokeStyle = '#bcd8ee';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 3; i++) {
+    const a = e.rollT * 6 * e.dir + i * (Math.PI * 2 / 3);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 10, a, a + 1.6);
+    ctx.stroke();
+  }
+  // 高光
+  ctx.fillStyle = '#dff0ff';
+  ctx.beginPath();
+  ctx.arc(cx - 5, cy - 6, 5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// 巡逻机器人：履带底盘 + 传感器眼 + 枪管
+function drawPatrolbot(ctx, e, time) {
+  const img = Assets.get('patrolbot');
+  if (img) {
+    drawSprite(ctx, img, e.x - 6, e.y - 4, e.w + 12, e.h + 4, { flip: e.facing > 0 });
+    return;
+  }
+  const cx = e.x + 14;
+  // 履带（滚动条纹）
+  rect(ctx, e.x + 1, e.y + 30, 26, 10, '#3c3e4a');
+  const tread = Math.floor(e.runT * 10) % 3;
+  for (let i = 0; i < 4; i++) rect(ctx, e.x + 3 + ((i * 7 + tread * 2) % 24), e.y + 32, 3, 6, '#5b5e70');
+  // 机身
+  rect(ctx, e.x + 3, e.y + 12, 22, 18, '#6a7a8c');
+  rect(ctx, e.x + 3, e.y + 12, 22, 5, '#8c9aac');
+  // 传感器眼（发现玩家变红闪烁）
+  const alert = e.state === 'shoot';
+  rect(ctx, cx + e.facing * 4 - 3, e.y + 4, 6, 6, alert && Math.sin(time * 20) > 0 ? '#ff4a3c' : '#9ae8ff');
+  rect(ctx, cx - 2, e.y + 6, 4, 6, '#4a4e5e');
+  // 枪管
+  rect(ctx, e.facing > 0 ? e.x + 25 : e.x - 7, e.y + 18, 10, 4, '#2b2b33');
 }
 
 function drawPowerup(ctx, p, time) {

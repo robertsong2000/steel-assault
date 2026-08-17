@@ -4,8 +4,85 @@ export const lerp = (a, b, t) => a + (b - a) * t;
 export const rand = (a, b) => a + Math.random() * (b - a);
 export const randInt = (a, b) => Math.floor(rand(a, b + 1));
 export const chance = (p) => Math.random() < p;
+export function seededRandom(seed) {
+  let value = (Number(seed) >>> 0) || 1;
+  return () => {
+    value ^= value << 13; value ^= value >>> 17; value ^= value << 5;
+    return (value >>> 0) / 4294967296;
+  };
+}
+export const ACCESSIBILITY = { shake: true, flashes: true, particles: 'high', textScale: 1, contrast: false };
+export function setAccessibility(options = {}) { Object.assign(ACCESSIBILITY, options); }
 
-// localStorage 安全读写：隐私模式抛异常 / 数据被写坏（NaN）时回退默认值
+// 存档：单一版本化对象；首次读取时兼容旧版分散 localStorage key。
+const SAVE_KEY = 'steel_assault_save';
+const SAVE_VERSION = 1;
+const freshSave = () => ({
+  version: SAVE_VERSION,
+  hi: 0,
+  difficulty: 1,
+  unlocked: 0,
+  audio: { master: 100, sfx: 100, bgm: 100 },
+  keybinds: null,
+  accessibility: { shake: true, flashes: true, particles: 'high', textScale: 1, contrast: false },
+});
+
+const safeGet = (key) => { try { return localStorage.getItem(key); } catch { return null; } };
+const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catch { /* 隐私模式等环境忽略写入失败 */ } };
+const finite = (value, fallback) => Number.isFinite(value) ? value : fallback;
+
+export function loadSave() {
+  const fallback = freshSave();
+  try {
+    const parsed = JSON.parse(safeGet(SAVE_KEY) || 'null');
+    if (parsed && typeof parsed === 'object' && parsed.version === SAVE_VERSION) {
+      return {
+        ...fallback, ...parsed,
+        hi: finite(+parsed.hi, fallback.hi),
+        difficulty: finite(+parsed.difficulty, fallback.difficulty),
+        unlocked: finite(+parsed.unlocked, fallback.unlocked),
+        audio: { ...fallback.audio, ...(parsed.audio || {}) },
+        accessibility: { ...fallback.accessibility, ...(parsed.accessibility || {}) },
+      };
+    }
+  } catch { /* 损坏数据迁移旧键或回退默认 */ }
+  const legacyKeys = JSON.parse(safeGet('steel_assault_keys') || 'null');
+  const migrated = {
+    ...fallback,
+    hi: finite(+safeGet('steel_assault_hi'), 0),
+    difficulty: finite(+safeGet('steel_assault_diff'), 1),
+    unlocked: finite(+safeGet('steel_assault_unlocked'), 0),
+    audio: {
+      master: finite(+safeGet('steel_assault_vol_master'), 100),
+      sfx: finite(+safeGet('steel_assault_vol_sfx'), 100),
+      bgm: finite(+safeGet('steel_assault_vol_bgm'), 100),
+    },
+    keybinds: legacyKeys,
+  };
+  saveGame((save) => Object.assign(save, migrated));
+  return migrated;
+}
+
+export function saveGame(mutator) {
+  const save = (() => {
+    try {
+      const parsed = JSON.parse(safeGet(SAVE_KEY) || 'null');
+      return parsed && parsed.version === SAVE_VERSION ? { ...freshSave(), ...parsed, audio: { ...freshSave().audio, ...(parsed.audio || {}) }, accessibility: { ...freshSave().accessibility, ...(parsed.accessibility || {}) } } : freshSave();
+    } catch { return freshSave(); }
+  })();
+  mutator(save);
+  save.version = SAVE_VERSION;
+  safeSet(SAVE_KEY, JSON.stringify(save));
+  return save;
+}
+
+export function resetGameSave() {
+  const save = freshSave();
+  safeSet(SAVE_KEY, JSON.stringify(save));
+  return save;
+}
+
+// 兼容旧调用的安全数值读写：新代码应优先使用 loadSave/saveGame。
 export function loadNum(key, fallback = 0) {
   try {
     const raw = localStorage.getItem(key);
@@ -72,14 +149,14 @@ export function rect(ctx, x, y, w, h, color) {
 }
 export function text(ctx, str, x, y, { size = 20, color = '#fff', align = 'left', weight = 'bold' } = {}) {
   ctx.fillStyle = color;
-  ctx.font = `${weight} ${size}px monospace`;
+  ctx.font = `${weight} ${Math.round(size * ACCESSIBILITY.textScale)}px monospace`;
   ctx.textAlign = align;
   ctx.textBaseline = 'top';
   ctx.fillText(str, x, y);
 }
 // 描边大字
 export function bigText(ctx, str, x, y, size, color, stroke = '#000') {
-  ctx.font = `900 ${size}px monospace`;
+  ctx.font = `900 ${Math.round(size * ACCESSIBILITY.textScale)}px monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineWidth = Math.max(3, size / 12);

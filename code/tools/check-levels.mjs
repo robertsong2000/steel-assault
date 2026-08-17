@@ -7,7 +7,7 @@ import { CFG } from '../js/config.js';
 
 let fail = 0;
 const err = (m) => { console.error('ERR', m); fail++; };
-const KNOWN_BOSSES = ['fortress', 'yeti', 'mech', 'heli', 'beast'];
+const KNOWN_BOSSES = ['fortress', 'yeti', 'mech', 'heli', 'beast', 'drill', 'warden', 'overlord'];
 
 LEVELS.forEach((lv, i) => {
   setLevel(i);
@@ -19,7 +19,7 @@ LEVELS.forEach((lv, i) => {
     err(`L${i} CFG sync fail`);
   }
   // 固定敌人脚下有恰好等高的支撑面
-  const fixed = [...lv.turrets, ...lv.snipers, ...(lv.grenadiers || []), ...(lv.shielders || [])];
+  const fixed = [...lv.turrets, ...lv.snipers, ...(lv.grenadiers || []), ...(lv.shielders || []), ...(lv.mortars || []), ...(lv.patrolbots || [])];
   for (const e of fixed) {
     const ok = [...lv.solids, ...lv.oneways].some(
       (s) => e.x >= s.x && e.x <= s.x + s.w && Math.abs(s.y - e.y) <= 1

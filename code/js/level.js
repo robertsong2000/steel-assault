@@ -6,7 +6,7 @@ import { Assets } from './assets.js';
 const G = CFG.GROUND_Y; // 470
 
 // ---------------- 关卡定义 ----------------
-// 每关：name 显示名 / theme 主题('jungle'|'snow') / width 总长 /
+// 每关：name 显示名 / theme 主题('jungle'|'snow'|'base'|'sky'|'desert'|'cave'|'night'|'space') / width 总长 /
 // bossTriggerX 触发 Boss 的玩家 x / wallX Boss 墙左缘 /
 // solids 实体地形 / oneways 单向平台 / turrets 炮台(x=中心,y=脚底) /
 // snipers 狙击手 / triggers 刷兵触发线 / waters 水面区间 [x0, x1]
@@ -124,15 +124,19 @@ export const LEVELS = [
       { x: 350,  type: 'runners', n: 2, dir: -1 },
       { x: 700,  type: 'paras', n: 2 },
       { x: 1100, type: 'drone', carry: 'M' },
+      // 滚雪球：雪原特色敌，出生点在开阔平地右侧，沿地面滚向玩家
+      { x: 1250, type: 'snowballs', n: 2, dir: -1 },
       { x: 1400, type: 'jumpers', n: 2, dir: -1 },
       { x: 1800, type: 'runners', n: 3, dir: 1 },
       { x: 2200, type: 'drone', carry: 'S' },
       { x: 2500, type: 'flyers', n: 2 },
       { x: 2900, type: 'rollers', n: 2, dir: -1 },
       { x: 3100, type: 'drone', carry: 'L' },
+      { x: 3190, type: 'snowballs', n: 2, dir: -1 },
       { x: 3400, type: 'runners', n: 3, dir: -1 },
       { x: 3700, type: 'drone', carry: 'G' },
       { x: 4000, type: 'flyers', n: 2 },
+      { x: 4140, type: 'snowballs', n: 2, dir: -1 },
       { x: 4300, type: 'drone', carry: 'B' },
       { x: 4500, type: 'drone', carry: 'H' },
       { x: 4650, type: 'runners', n: 3, dir: -1 },
@@ -372,6 +376,284 @@ export const LEVELS = [
     ],
     waters: [],
   },
+  {
+    name: '第6关 熔岩洞窟',
+    theme: 'cave',
+    boss: 'drill',
+    ebulletMul: 1.2,      // 后半程加压：敌弹提速
+    width: 5600,
+    bossTriggerX: 4760,
+    wallX: 5310,
+    // 地貌性格：岩石台阶攀爬 + 岩浆池断路 + 移动平台横跨岩浆
+    solids: [
+      { x: 0,    y: G, w: 1000, h: 70, kind: 'ground' },
+      { x: 1150, y: G, w: 750,  h: 70, kind: 'ground' },
+      { x: 2150, y: G, w: 850,  h: 70, kind: 'ground' },
+      { x: 3120, y: G, w: 780,  h: 70, kind: 'ground' },
+      { x: 4200, y: G, w: 1400, h: 70, kind: 'ground' },
+      { x: 1400, y: 380, w: 180, h: 90, kind: 'rock' },
+      { x: 2400, y: 390, w: 170, h: 80, kind: 'rock' },
+      { x: 3350, y: 380, w: 180, h: 90, kind: 'rock' },
+      { x: 4550, y: 390, w: 170, h: 80, kind: 'rock' },
+      { x: 5310, y: 0, w: 290, h: G, kind: 'wall' },
+    ],
+    oneways: [
+      { x: 600,  y: 360, w: 160, h: 14, kind: 'metal' },
+      { x: 950,  y: 370, w: 90,  h: 14, kind: 'metal' },
+      { x: 1550, y: 300, w: 130, h: 14, kind: 'metal' },
+      // 移动平台横跨岩浆（升降摆渡）
+      { x: 1980, y: 358, w: 110, h: 14, kind: 'metal', move: { range: 28, speed: 55, phase: 0 } },
+      { x: 2450, y: 300, w: 130, h: 14, kind: 'metal' },
+      { x: 2700, y: 370, w: 140, h: 14, kind: 'metal' },
+      { x: 3500, y: 290, w: 130, h: 14, kind: 'metal' },
+      { x: 3940, y: 358, w: 110, h: 14, kind: 'metal', move: { range: 28, speed: 60, phase: 1.4 } },
+      { x: 4080, y: 370, w: 100, h: 14, kind: 'metal' },
+      { x: 4400, y: 360, w: 150, h: 14, kind: 'metal' },
+      { x: 4700, y: 290, w: 140, h: 14, kind: 'metal' },
+      { x: 4950, y: 360, w: 140, h: 14, kind: 'metal' },
+    ],
+    turrets: [
+      { x: 1450, y: 380 },
+      { x: 3400, y: 380 },
+      { x: 4600, y: 390 },
+    ],
+    snipers: [
+      { x: 2500, y: G },
+      { x: 4300, y: G },
+    ],
+    grenadiers: [
+      { x: 2300, y: G },
+      { x: 3600, y: G },
+    ],
+    shielders: [
+      { x: 3250, y: G },
+    ],
+    // 迫击炮兵首次登场：高弧线榴弹封锁跳跃路线
+    mortars: [
+      { x: 1750, y: G },
+      { x: 2900, y: G },
+      { x: 4900, y: G },
+    ],
+    triggers: [
+      { x: 350,  type: 'runners', n: 3, dir: -1 },
+      { x: 700,  type: 'jumpers', n: 2, dir: -1 },
+      { x: 1000, type: 'drone', carry: 'M' },
+      { x: 1300, type: 'runners', n: 3, dir: -1 },
+      { x: 1650, type: 'rollers', n: 2, dir: -1 },
+      { x: 2000, type: 'drone', carry: 'S' },
+      { x: 2300, type: 'paras', n: 2 },
+      { x: 2600, type: 'runners', n: 3, dir: 1 },
+      { x: 2900, type: 'drone', carry: 'L' },
+      { x: 3200, type: 'jumpers', n: 2, dir: -1 },
+      { x: 3500, type: 'drone', carry: 'B' },
+      { x: 3800, type: 'runners', n: 4, dir: -1 },
+      { x: 4100, type: 'drone', carry: 'G' },
+      { x: 4400, type: 'rollers', n: 2, dir: -1 },
+      { x: 4650, type: 'drone', carry: 'H' },
+      { x: 4800, type: 'drone', carry: 'M' },
+      { x: 4950, type: 'runners', n: 3, dir: -1 },
+      { x: 5100, type: 'drone', carry: 'F' },
+    ],
+    // 岩浆池（waters 区间 + cave 主题岩浆配色）
+    waters: [[1000, 1150], [1900, 2150], [3000, 3120], [3900, 4200]],
+  },
+  {
+    name: '第7关 暴雨夜港',
+    theme: 'night',
+    boss: 'warden',
+    ebulletMul: 1.3,      // 后半程加压：敌弹提速
+    width: 5600,
+    bossTriggerX: 4760,
+    wallX: 5310,
+    // 地貌性格：集装箱双层走廊 + 吊桥跨水 + 暴雨侧风
+    solids: [
+      { x: 0,    y: G, w: 1100, h: 70, kind: 'ground' },
+      { x: 1260, y: G, w: 1040, h: 70, kind: 'ground' },
+      { x: 2620, y: G, w: 880,  h: 70, kind: 'ground' },
+      { x: 3660, y: G, w: 740,  h: 70, kind: 'ground' },
+      { x: 4600, y: G, w: 1000, h: 70, kind: 'ground' },
+      { x: 5310, y: 0, w: 290, h: G, kind: 'wall' },
+    ],
+    oneways: [
+      // 集装箱双层走廊（下层走道 + 上层箱顶）
+      { x: 400,  y: 350, w: 170, h: 14, kind: 'metal' },
+      { x: 680,  y: 240, w: 150, h: 14, kind: 'metal' },
+      { x: 960,  y: 350, w: 140, h: 14, kind: 'metal' },
+      { x: 1300, y: 350, w: 170, h: 14, kind: 'metal' },
+      { x: 1550, y: 240, w: 150, h: 14, kind: 'metal' },
+      { x: 1750, y: 350, w: 170, h: 14, kind: 'metal' },
+      { x: 2000, y: 240, w: 150, h: 14, kind: 'metal' },
+      // 吊桥跨水面
+      { x: 2330, y: G,   w: 260, h: 14, kind: 'bridge' },
+      { x: 2700, y: 350, w: 170, h: 14, kind: 'metal' },
+      { x: 2950, y: 240, w: 150, h: 14, kind: 'metal' },
+      { x: 3200, y: 350, w: 170, h: 14, kind: 'metal' },
+      { x: 3750, y: 350, w: 170, h: 14, kind: 'metal' },
+      { x: 4000, y: 240, w: 150, h: 14, kind: 'metal' },
+      // 水面上跳板
+      { x: 4460, y: 380, w: 90,  h: 14, kind: 'metal' },
+      { x: 4650, y: 350, w: 170, h: 14, kind: 'metal' },
+      { x: 4900, y: 240, w: 150, h: 14, kind: 'metal' },
+      { x: 5150, y: 340, w: 140, h: 14, kind: 'metal' },
+    ],
+    turrets: [
+      { x: 750,  y: 240 },
+      { x: 2070, y: 240 },
+      { x: 3020, y: 240 },
+      { x: 4960, y: 240 },
+    ],
+    snipers: [
+      { x: 1700, y: G },
+      { x: 3850, y: G },
+    ],
+    grenadiers: [
+      { x: 800,  y: G },
+      { x: 5200, y: G },
+    ],
+    shielders: [
+      { x: 1450, y: G },
+      { x: 3300, y: G },
+      { x: 4750, y: G },
+    ],
+    // 巡逻机器人主场：集装箱走廊上来回巡逻
+    patrolbots: [
+      { x: 460,  y: 350 },
+      { x: 1350, y: 350 },
+      { x: 1800, y: 350 },
+      { x: 2750, y: 350 },
+      { x: 2850, y: G },
+      { x: 3800, y: 350 },
+      { x: 4200, y: G },
+      { x: 4700, y: 350 },
+    ],
+    // 暴雨侧风：跨水跳跃被吹偏（记忆点）
+    winds: [
+      { x0: 2300, x1: 2620, force: -60 },
+      { x0: 4400, x1: 4600, force: 70 },
+    ],
+    triggers: [
+      { x: 300,  type: 'patrolbots', n: 2, dir: -1 },
+      { x: 650,  type: 'paras', n: 2 },
+      { x: 950,  type: 'drone', carry: 'M' },
+      { x: 1250, type: 'runners', n: 3, dir: -1 },
+      { x: 1600, type: 'patrolbots', n: 2, dir: -1 },
+      { x: 1950, type: 'drone', carry: 'S' },
+      { x: 2250, type: 'flyers', n: 2 },
+      { x: 2650, type: 'patrolbots', n: 3, dir: -1 },
+      { x: 2950, type: 'drone', carry: 'L' },
+      { x: 3250, type: 'runners', n: 3, dir: 1 },
+      { x: 3550, type: 'drone', carry: 'B' },
+      { x: 3850, type: 'patrolbots', n: 2, dir: -1 },
+      { x: 4150, type: 'drone', carry: 'G' },
+      { x: 4450, type: 'paras', n: 3 },
+      { x: 4700, type: 'drone', carry: 'H' },
+      { x: 4900, type: 'runners', n: 4, dir: -1 },
+      { x: 5050, type: 'drone', carry: 'F' },
+      { x: 5150, type: 'drone', carry: 'M' },
+    ],
+    // 落水区（夜海）
+    waters: [[1100, 1260], [2300, 2620], [3500, 3660], [4400, 4600]],
+  },
+  {
+    name: '第8关 天穹空间站',
+    theme: 'space',
+    boss: 'overlord',
+    ebulletMul: 1.45,     // 终关：敌弹大幅提速
+    width: 5600,
+    bossTriggerX: 4760,
+    wallX: 5310,
+    // 地貌性格：金属浮岛 + 塌陷平台 + 垂直升降平台 + 无底深空坑洞
+    solids: [
+      { x: 0,    y: G, w: 900,  h: 70, kind: 'ground' },
+      { x: 1050, y: G, w: 550,  h: 70, kind: 'ground' },
+      { x: 1900, y: G, w: 600,  h: 70, kind: 'ground' },
+      { x: 2720, y: G, w: 680,  h: 70, kind: 'ground' },
+      { x: 3750, y: G, w: 550,  h: 70, kind: 'ground' },
+      { x: 4500, y: G, w: 1100, h: 70, kind: 'ground' },
+      { x: 5310, y: 0, w: 290, h: G, kind: 'wall' },
+    ],
+    oneways: [
+      { x: 450,  y: 360, w: 150, h: 14, kind: 'metal' },
+      { x: 700,  y: 280, w: 130, h: 14, kind: 'metal' },
+      { x: 1150, y: 350, w: 150, h: 14, kind: 'metal' },
+      // 坑洞摆渡：塌陷板 + 垂直升降平台
+      { x: 1620, y: 358, w: 100, h: 14, kind: 'crumble' },
+      { x: 1760, y: 358, w: 110, h: 14, kind: 'metal', move: { range: 28, speed: 60, phase: 0.7 } },
+      { x: 2000, y: 350, w: 150, h: 14, kind: 'metal' },
+      { x: 2250, y: 270, w: 130, h: 14, kind: 'metal' },
+      // 双塌陷板连跳
+      { x: 2530, y: 360, w: 90,  h: 14, kind: 'crumble' },
+      { x: 2630, y: 360, w: 80,  h: 14, kind: 'crumble' },
+      { x: 2800, y: 350, w: 150, h: 14, kind: 'metal' },
+      { x: 3050, y: 270, w: 130, h: 14, kind: 'metal' },
+      // 最宽坑洞：升降平台 + 双塌陷板
+      { x: 3440, y: 358, w: 110, h: 14, kind: 'metal', move: { range: 28, speed: 55, phase: 1.9 } },
+      { x: 3590, y: 360, w: 80,  h: 14, kind: 'crumble' },
+      { x: 3670, y: 360, w: 80,  h: 14, kind: 'crumble' },
+      { x: 3850, y: 350, w: 150, h: 14, kind: 'metal' },
+      { x: 4100, y: 270, w: 130, h: 14, kind: 'metal' },
+      // 悬空跳板跨坑
+      { x: 4360, y: 380, w: 90,  h: 14, kind: 'metal' },
+      { x: 4600, y: 350, w: 150, h: 14, kind: 'metal' },
+      { x: 4850, y: 270, w: 130, h: 14, kind: 'metal' },
+      { x: 5100, y: 350, w: 140, h: 14, kind: 'metal' },
+    ],
+    turrets: [
+      { x: 760,  y: 280 },
+      { x: 2310, y: 270 },
+      { x: 4160, y: 270 },
+      { x: 4910, y: 270 },
+    ],
+    snipers: [
+      { x: 1300, y: G },
+      { x: 3000, y: G },
+      { x: 4700, y: G },
+    ],
+    grenadiers: [
+      { x: 2400, y: G },
+      { x: 3950, y: G },
+    ],
+    shielders: [
+      { x: 2050, y: G },
+      { x: 5050, y: G },
+    ],
+    // 全家桶混搭：迫击炮 + 巡逻机器人混编
+    mortars: [
+      { x: 2100, y: G },
+      { x: 3300, y: G },
+      { x: 4600, y: G },
+    ],
+    patrolbots: [
+      { x: 1200, y: 350 },
+      { x: 2850, y: 350 },
+      { x: 3900, y: 350 },
+      { x: 5200, y: G },
+    ],
+    triggers: [
+      { x: 250,  type: 'flyers', n: 2 },
+      { x: 550,  type: 'rollers', n: 2, dir: -1 },
+      { x: 850,  type: 'drone', carry: 'M' },
+      { x: 1100, type: 'runners', n: 3, dir: -1 },
+      { x: 1400, type: 'patrolbots', n: 2, dir: -1 },
+      { x: 1700, type: 'drone', carry: 'S' },
+      { x: 2000, type: 'flyers', n: 3 },
+      { x: 2300, type: 'rollers', n: 2, dir: -1 },
+      { x: 2600, type: 'drone', carry: 'L' },
+      { x: 2900, type: 'jumpers', n: 2, dir: -1 },
+      { x: 3200, type: 'drone', carry: 'B' },
+      { x: 3500, type: 'flyers', n: 2 },
+      { x: 3800, type: 'drone', carry: 'G' },
+      { x: 4100, type: 'patrolbots', n: 2, dir: -1 },
+      { x: 4400, type: 'runners', n: 4, dir: -1 },
+      { x: 4650, type: 'drone', carry: 'H' },
+      { x: 4850, type: 'rollers', n: 3, dir: -1 },
+      { x: 5000, type: 'drone', carry: 'M' },
+      { x: 5150, type: 'flyers', n: 3 },
+      { x: 5250, type: 'drone', carry: 'F' },
+    ],
+    // 深空：坑洞是无底深渊（坠落即死）
+    waters: [],
+  },
 ];
 
 // 当前关卡（setLevel 就地替换内容，外部 import 绑定不失效）
@@ -476,6 +758,9 @@ export function drawBackground(ctx, camX, t) {
   if (LEVEL.theme === 'base') return drawBaseBackground(ctx, camX, t);
   if (LEVEL.theme === 'sky') return drawSkyBackground(ctx, camX, t);
   if (LEVEL.theme === 'desert') return drawDesertBackground(ctx, camX, t);
+  if (LEVEL.theme === 'cave') return drawCaveBackground(ctx, camX, t);
+  if (LEVEL.theme === 'night') return drawNightBackground(ctx, camX, t);
+  if (LEVEL.theme === 'space') return drawSpaceBackground(ctx, camX, t);
 
   const sky = Assets.get('bg_sky');
   if (sky) {
@@ -672,6 +957,200 @@ function drawDesertBackground(ctx, camX, t) {
   }
 }
 
+// ---------------- 熔岩洞窟背景（全代码手绘，无素材） ----------------
+function drawCaveBackground(ctx, camX, t) {
+  // 暗红岩壁
+  const grad = ctx.createLinearGradient(0, 0, 0, CFG.H);
+  grad.addColorStop(0, '#12060a');
+  grad.addColorStop(0.6, '#2a0e10');
+  grad.addColorStop(1, '#4a1a10');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, CFG.W, CFG.H);
+  // 远处岩层褶皱（视差 0.15 / 0.3）
+  drawRidge(ctx, camX * 0.15, 300, 130, '#1d0a0c', 0.9);
+  drawRidge(ctx, camX * 0.3, 390, 100, '#331210', 1.4);
+  // 钟乳石剪影（视差 0.5）
+  ctx.fillStyle = '#1a0c0e';
+  for (let i = -1; i < 10; i++) {
+    const wx = i * 160 + (camX * 0.5 % 160);
+    const seed = i + Math.floor(camX * 0.5 / 160);
+    const h = 50 + hash01(seed, 3) * 80;
+    const w = 22 + hash01(seed, 5) * 18;
+    ctx.beginPath();
+    ctx.moveTo(wx - w, 0);
+    ctx.lineTo(wx + w, 0);
+    ctx.lineTo(wx, h);
+    ctx.closePath();
+    ctx.fill();
+  }
+  // 底部岩浆辉光（越靠近地面越亮）
+  const glow = ctx.createLinearGradient(0, CFG.GROUND_Y - 220, 0, CFG.GROUND_Y);
+  glow.addColorStop(0, 'rgba(232,85,42,0)');
+  glow.addColorStop(1, 'rgba(232,85,42,0.35)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, CFG.GROUND_Y - 220, CFG.W, 220);
+  // 飘落火星（屏幕空间，缓缓上升）
+  for (let i = 0; i < 50; i++) {
+    const speed = 24 + hash01(i, 9) * 46;
+    const x = (hash01(i, 5) * CFG.W + Math.sin(t * 1.2 + i) * 16 + camX * 0.05) % CFG.W;
+    const y = CFG.H - ((hash01(i, 7) * CFG.H + t * speed) % CFG.H);
+    ctx.globalAlpha = 0.3 + hash01(i, 13) * 0.6;
+    ctx.fillStyle = hash01(i, 11) > 0.5 ? '#ff9a50' : '#ffd76a';
+    ctx.fillRect(x, y, 2, 2);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---------------- 暴雨夜港背景（全代码手绘，无素材） ----------------
+function drawNightBackground(ctx, camX, t) {
+  // 夜空
+  const grad = ctx.createLinearGradient(0, 0, 0, CFG.H);
+  grad.addColorStop(0, '#060a18');
+  grad.addColorStop(0.55, '#0e1830');
+  grad.addColorStop(1, '#1c2c48');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, CFG.W, CFG.H);
+  // 疏星（被云层压得昏暗）
+  for (let i = 0; i < 30; i++) {
+    const sx = hash01(i, 7) * CFG.W;
+    const sy = hash01(i, 13) * 180;
+    ctx.globalAlpha = (0.3 + hash01(i, 29) * 0.4) * (1 - sy / 240);
+    ctx.fillStyle = '#c8d4ea';
+    ctx.fillRect(sx, sy, 2, 2);
+  }
+  ctx.globalAlpha = 1;
+  // 雨夜昏月
+  const moonX = 740 - camX * 0.04;
+  ctx.fillStyle = 'rgba(216,228,248,0.8)';
+  ctx.beginPath();
+  ctx.arc(moonX, 110, 34, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(216,228,248,0.18)';
+  ctx.beginPath();
+  ctx.arc(moonX, 110, 52, 0, Math.PI * 2);
+  ctx.fill();
+  // 远处吊机 / 集装箱剪影（视差 0.4）
+  ctx.fillStyle = '#0a101f';
+  for (let i = -1; i < 5; i++) {
+    const wx = i * 420 + (camX * 0.4 % 420);
+    const seed = i + Math.floor(camX * 0.4 / 420);
+    if (hash01(seed, 3) > 0.45) {
+      // 门式吊机：双腿 + 横梁 + 吊臂
+      rect(ctx, wx, CFG.GROUND_Y - 150, 12, 150, '#0a101f');
+      rect(ctx, wx + 100, CFG.GROUND_Y - 150, 12, 150, '#0a101f');
+      rect(ctx, wx - 10, CFG.GROUND_Y - 162, 132, 14, '#0a101f');
+      rect(ctx, wx + 100, CFG.GROUND_Y - 176, 90, 10, '#0a101f');
+    } else {
+      // 集装箱堆
+      const n = 2 + Math.floor(hash01(seed, 5) * 3);
+      for (let k = 0; k < n; k++) {
+        rect(ctx, wx + k * 4, CFG.GROUND_Y - 34 * (k + 1), 120 - k * 20, 34, '#0a101f');
+      }
+    }
+  }
+  // 闪电偶发：短促双闪照亮全屏
+  const cyc = t % 8;
+  const flash = cyc < 0.1 || (cyc > 0.18 && cyc < 0.24);
+  if (flash) {
+    ctx.fillStyle = 'rgba(200,220,255,0.22)';
+    ctx.fillRect(0, 0, CFG.W, CFG.H);
+    // 折线闪电
+    const bx = 120 + hash01(Math.floor(t / 8), 7) * (CFG.W - 240);
+    ctx.strokeStyle = 'rgba(230,240,255,0.9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bx, 0);
+    ctx.lineTo(bx - 14, 60);
+    ctx.lineTo(bx + 8, 110);
+    ctx.lineTo(bx - 10, 170);
+    ctx.stroke();
+  }
+  // 侧风区的气流线（雨中更明显）
+  if (LEVEL.winds) {
+    ctx.fillStyle = 'rgba(180,200,240,0.5)';
+    for (const w of LEVEL.winds) {
+      if (w.x1 < camX || w.x0 > camX + CFG.W) continue;
+      for (let i = 0; i < 10; i++) {
+        const wy = 120 + hash01(i, w.x0) * 320;
+        const wx = w.x0 + ((hash01(i, 7) * (w.x1 - w.x0) + t * w.force * 3) % (w.x1 - w.x0) + (w.x1 - w.x0)) % (w.x1 - w.x0);
+        ctx.fillRect(wx, wy, w.force > 0 ? 26 : -26, 2);
+      }
+    }
+  }
+  // 雨丝（屏幕空间前景，斜向密集）
+  ctx.strokeStyle = 'rgba(160,190,230,0.32)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i < 90; i++) {
+    const speed = 480 + hash01(i, 9) * 320;
+    const x = (hash01(i, 5) * (CFG.W + 80) + t * 70) % (CFG.W + 80) - 40;
+    const y = (hash01(i, 7) * CFG.H + t * speed) % CFG.H;
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 4, y + 14);
+  }
+  ctx.stroke();
+}
+
+// ---------------- 天穹空间站背景（全代码手绘，无素材） ----------------
+function drawSpaceBackground(ctx, camX, t) {
+  // 深空
+  const grad = ctx.createLinearGradient(0, 0, 0, CFG.H);
+  grad.addColorStop(0, '#020208');
+  grad.addColorStop(0.6, '#0a0a20');
+  grad.addColorStop(1, '#141432');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, CFG.W, CFG.H);
+  // 双层星空（远星慢 / 近星快，视差滚动）
+  for (let layer = 0; layer < 2; layer++) {
+    const par = layer ? 0.08 : 0.03;
+    const n = layer ? 40 : 70;
+    for (let i = 0; i < n; i++) {
+      const sx = ((hash01(i, 7 + layer) * CFG.W - camX * par) % CFG.W + CFG.W) % CFG.W;
+      const sy = hash01(i, 13 + layer) * CFG.H;
+      const tw = Math.sin(t * 2 + i) * 0.3 + 0.7;
+      ctx.globalAlpha = tw * (layer ? 0.9 : 0.5);
+      ctx.fillStyle = layer ? '#e8ecff' : '#9aa4cc';
+      ctx.fillRect(sx, sy, layer ? 2 : 1, layer ? 2 : 1);
+    }
+  }
+  ctx.globalAlpha = 1;
+  // 地球远景（缓慢视差）
+  const ex = 690 - camX * 0.03;
+  ctx.fillStyle = '#1a4a8c';
+  ctx.beginPath();
+  ctx.arc(ex, 150, 84, 0, Math.PI * 2);
+  ctx.fill();
+  // 大陆与云层
+  ctx.fillStyle = '#2a7a4a';
+  ctx.beginPath();
+  ctx.arc(ex - 26, 130, 26, 0, Math.PI * 2);
+  ctx.arc(ex + 30, 176, 20, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(240,246,255,0.55)';
+  ctx.beginPath();
+  ctx.arc(ex + 14, 118, 18, 0, Math.PI * 2);
+  ctx.arc(ex - 38, 176, 14, 0, Math.PI * 2);
+  ctx.fill();
+  // 大气辉光
+  ctx.strokeStyle = 'rgba(122,184,240,0.5)';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(ex, 150, 88, 0, Math.PI * 2);
+  ctx.stroke();
+  // 漂浮碎片（视差 0.5，缓缓翻滚漂移）
+  for (let i = 0; i < 14; i++) {
+    const dx = ((hash01(i, 5) * (CFG.W + 120) - camX * 0.5 + t * 12) % (CFG.W + 120) + CFG.W + 120) % (CFG.W + 120) - 60;
+    const dy = 60 + hash01(i, 7) * 340 + Math.sin(t * 0.8 + i) * 10;
+    const s = 3 + hash01(i, 9) * 6;
+    ctx.save();
+    ctx.translate(dx, dy);
+    ctx.rotate(t * 0.5 + i);
+    ctx.fillStyle = `rgba(140,150,180,${0.4 + hash01(i, 11) * 0.4})`;
+    ctx.fillRect(-s / 2, -s / 2, s, s * 0.6);
+    ctx.restore();
+  }
+}
+
 // ---------------- 基地内部背景 ----------------
 function drawBaseBackground(ctx, camX, t) {
   const bg = Assets.get('bg_base');
@@ -856,7 +1335,8 @@ function drawLaserGate(ctx, camX, t, g) {
 
 function drawGround(ctx, s) {
   if (LEVEL.theme === 'snow') return drawSnowGround(ctx, s);
-  if (LEVEL.theme === 'base' || LEVEL.theme === 'sky') return drawBaseGround(ctx, s);
+  if (LEVEL.theme === 'cave') return drawCaveGround(ctx, s);
+  if (LEVEL.theme === 'base' || LEVEL.theme === 'sky' || LEVEL.theme === 'night' || LEVEL.theme === 'space') return drawBaseGround(ctx, s);
   if (LEVEL.theme === 'desert') return drawSandGround(ctx, s);
   const pat = Assets.pattern(ctx, 'tile_ground');
   if (pat) {
@@ -872,6 +1352,18 @@ function drawGround(ctx, s) {
   for (let x = s.x; x < s.x + s.w; x += 18) {
     if (hash01(x, s.y) > 0.55) rect(ctx, x, s.y - 6, 4, 6, '#4f9440');
     if (hash01(x, 99) > 0.6) rect(ctx, x + 6, s.y + 24 + hash01(x, 5) * 30, 5, 4, '#3a2415');
+  }
+}
+
+// 火山岩：暗红玄武岩 + 岩浆裂纹发光
+function drawCaveGround(ctx, s) {
+  rect(ctx, s.x, s.y, s.w, s.h, '#2e1a16');
+  rect(ctx, s.x, s.y, s.w, 10, '#4a2620');
+  rect(ctx, s.x, s.y, s.w, 3, '#6b3524');
+  // 岩浆裂纹与岩块噪点（坐标哈希，静止不闪）
+  for (let x = s.x; x < s.x + s.w; x += 26) {
+    if (hash01(x, s.y) > 0.6) rect(ctx, x + 4, s.y + 18 + hash01(x, 5) * 30, 8, 2, '#e8552a');
+    if (hash01(x, 99) > 0.65) rect(ctx, x + 10, s.y + 30 + hash01(x, 3) * 24, 5, 4, '#241210');
   }
 }
 
@@ -1071,6 +1563,32 @@ function drawWater(ctx, camX, t, x0, x1) {
       const bx = x0 + hash01(i, x0) * (x1 - x0);
       const by = 506 + ((t * 26 + i * 17) % 30);
       ctx.fillRect(bx, by, 3, 3);
+    }
+    return;
+  }
+  if (LEVEL.theme === 'cave') {
+    // 岩浆池：炽热橙红 + 岩浆泡
+    rect(ctx, x0, 500, x1 - x0, 40, '#7a1a08');
+    ctx.fillStyle = '#ff7a2a';
+    for (let x = x0; x < x1; x += 16) {
+      const yy = 502 + Math.sin(t * 3 + x * 0.09) * 3;
+      ctx.fillRect(x, yy, 10, 3);
+    }
+    ctx.fillStyle = '#ffc46b';
+    for (let i = 0; i < 4; i++) {
+      const bx = x0 + hash01(i, x0) * (x1 - x0);
+      const by = 506 + ((t * 22 + i * 17) % 30);
+      ctx.fillRect(bx, by, 3, 3);
+    }
+    return;
+  }
+  if (LEVEL.theme === 'night') {
+    // 夜海：墨蓝黑 + 暗波
+    rect(ctx, x0, 500, x1 - x0, 40, '#081426');
+    ctx.fillStyle = '#1d3a5c';
+    for (let x = x0; x < x1; x += 16) {
+      const yy = 502 + Math.sin(t * 3 + x * 0.09) * 3;
+      ctx.fillRect(x, yy, 10, 3);
     }
     return;
   }

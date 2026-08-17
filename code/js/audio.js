@@ -1,6 +1,10 @@
 // ===================== 音频系统：合成音效 + 原创芯片BGM + CC0短音乐 =====================
 // BGM 为原创曲（A小调行进摇滚动机），不引用任何现成游戏旋律。
+import { clamp, loadSave, saveGame } from './utils.js';
+
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+// 各通道满值增益（音量 100% 时保持原有响度）
+const MASTER_MAX = 0.45, SFX_MAX = 0.9, BGM_MAX = 0.75;
 
 // 关卡BGM：8小节 x 16步。0=休止
 const LEVEL_BASS_ROOT = [33, 33, 29, 31, 33, 33, 29, 28]; // A1 A1 F1 G1 A1 A1 F1 E1
@@ -27,31 +31,62 @@ export class AudioSys {
     this.bgmTimer = null;
     this.step = 0;
     this.mode = null;
+    this.scheduleLag = 0;
     this.jingles = {};
+    // 音量 0~1（持久化为百分比）；ctx 未建时先存值，ensure 时应用
+    const audio = loadSave().audio;
+    this.volMaster = clamp(audio.master / 100, 0, 1);
+    this.volSfx = clamp(audio.sfx / 100, 0, 1);
+    this.volBgm = clamp(audio.bgm / 100, 0, 1);
   }
 
   ensure() {
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
-      this.ctx = new AC();
+      if (!AC) return false;
+      try {
+        this.ctx = new AC();
+      } catch {
+        // 浏览器禁用 WebAudio 时，游戏仍可使用 Canvas 和静音玩法运行。
+        this.ctx = null;
+        return false;
+      }
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.45;
+      this.master.gain.value = this.muted ? 0 : this.volMaster * MASTER_MAX;
       this.master.connect(this.ctx.destination);
       this.sfxGain = this.ctx.createGain();
-      this.sfxGain.gain.value = 0.9;
+      this.sfxGain.gain.value = this.volSfx * SFX_MAX;
       this.sfxGain.connect(this.master);
       this.bgmGain = this.ctx.createGain();
-      this.bgmGain.gain.value = 0.75;
+      this.bgmGain.gain.value = this.volBgm * BGM_MAX;
       this.bgmGain.connect(this.master);
       this.loadJingles();
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+    return true;
   }
 
   toggleMute() {
     this.muted = !this.muted;
-    if (this.master) this.master.gain.value = this.muted ? 0 : 0.45;
+    if (this.master) this.master.gain.value = this.muted ? 0 : this.volMaster * MASTER_MAX;
     return this.muted;
+  }
+
+  // ---- 音量设置（0~1，立即生效并持久化百分比） ----
+  setMasterVol(v) {
+    this.volMaster = clamp(v, 0, 1);
+    saveGame((save) => { save.audio.master = Math.round(this.volMaster * 100); });
+    if (this.master && !this.muted) this.master.gain.value = this.volMaster * MASTER_MAX;
+  }
+  setSfxVol(v) {
+    this.volSfx = clamp(v, 0, 1);
+    saveGame((save) => { save.audio.sfx = Math.round(this.volSfx * 100); });
+    if (this.sfxGain) this.sfxGain.gain.value = this.volSfx * SFX_MAX;
+  }
+  setBgmVol(v) {
+    this.volBgm = clamp(v, 0, 1);
+    saveGame((save) => { save.audio.bgm = Math.round(this.volBgm * 100); });
+    if (this.bgmGain) this.bgmGain.gain.value = this.volBgm * BGM_MAX;
   }
 
   async loadJingles() {
@@ -182,6 +217,7 @@ export class AudioSys {
 
   schedule() {
     if (!this.ctx) return;
+    this.scheduleLag = Math.max(0, this.ctx.currentTime - this.nextTime);
     // 后台标签页 setInterval 被节流：回前台时最多补 4 步，落后的直接跳过，避免音符叠放爆音
     if (this.nextTime < this.ctx.currentTime - this.stepDur * 4) {
       const skipped = Math.max(0, Math.floor((this.ctx.currentTime - this.nextTime) / this.stepDur) - 4);

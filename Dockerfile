@@ -8,6 +8,7 @@ LABEL description="STEEL ASSAULT - contra-style web run-and-gun game"
 
 # 拷贝游戏静态资源到 nginx 默认站点目录
 COPY code/ /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # 暴露 80 端口
 EXPOSE 80

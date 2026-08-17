@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node tools/verify.mjs && node tools/verify-bosses.mjs && node tools/verify-combat.mjs",
+    "smoke": "node tools/smoke-browser.mjs",
+    "report:levels": "node tools/report-levels.mjs"
+  }
+}

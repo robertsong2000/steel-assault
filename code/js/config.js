@@ -51,11 +51,11 @@ export const WEAPON_COLOR = {
 
 export const SCORE = { runner: 100, sniper: 200, turret: 300, drone: 150, cannon: 500, boss: 5000, powerup: 500 };
 
-// 难度：命数 + 敌弹速度倍率
+// 难度：集中管理玩家容错、敌弹、Boss 生命与攻击节奏，避免散落魔法倍率。
 export const DIFFS = [
-  { name: '简单', lives: 5, mul: 0.85 },
-  { name: '经典', lives: 3, mul: 1.0 },
-  { name: '硬核', lives: 1, mul: 1.2 },
+  { name: '简单', lives: 5, mul: 0.85, bossHp: 0.75, bossSpeed: 0.85, supply: 1.25 },
+  { name: '经典', lives: 3, mul: 1.0, bossHp: 1.0, bossSpeed: 1.0, supply: 1.0 },
+  { name: '硬核', lives: 1, mul: 1.2, bossHp: 1.35, bossSpeed: 1.18, supply: 0.72 },
 ];
 
 // 每关 BGM 变奏（移调半音 + 速度）
@@ -65,4 +65,7 @@ export const LEVEL_MUSIC = [
   { transpose: -2, bpm: 146 },  // 基地 低沉闷
   { transpose: 2, bpm: 156 },   // 战舰 明亮
   { transpose: -4, bpm: 158 },  // 遗迹 紧张
+  { transpose: -3, bpm: 160 },  // 熔岩洞窟 低沉压迫
+  { transpose: 1, bpm: 164 },   // 暴雨夜港 雨夜急促
+  { transpose: 5, bpm: 168 },   // 天穹空间站 终战高亢极速
 ];

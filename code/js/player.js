@@ -3,6 +3,7 @@ import { CFG, WEAPONS } from './config.js';
 import { clamp, physicsMove, rect } from './utils.js';
 import { LEVEL } from './level.js';
 import { Assets, drawSprite } from './assets.js';
+import { statRow } from './combat.js';
 
 export class Player {
   constructor() {
@@ -131,7 +132,11 @@ export class Player {
   fire(world) {
     const w = WEAPONS[this.weapon];
     this.fireCd = w.cd;
-    if (world.stats) world.stats.shots += this.weapon === 'S' ? w.fan : 1;
+    if (world.stats) {
+      world.stats.shots += this.weapon === 'S' ? w.fan : 1;
+      const row = statRow(world.stats, this.weapon);
+      row.shots += this.weapon === 'S' ? w.fan : 1;
+    }
     const sx = this.x + this.w / 2;
     const sy = this.y + (this.crouch ? 8 : 16);
     const mx = sx + this.aimX * 24;

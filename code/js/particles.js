@@ -1,5 +1,5 @@
 // ===================== 粒子特效：爆炸/火花/烟雾/碎石/灼痕/枪口焰/浮动文字 =====================
-import { rand, chance } from './utils.js';
+import { rand, chance, ACCESSIBILITY } from './utils.js';
 import { Assets } from './assets.js';
 
 const MAX_PARTICLES = 320;
@@ -11,12 +11,17 @@ export class Particles {
     this.texts = [];
   }
 
+  get count() { return this.list.length + this.texts.length; }
+
   clear() {
     this.list.length = 0;
     this.texts.length = 0;
   }
 
   spawn(x, y, o = {}) {
+    if (ACCESSIBILITY.particles === 'off') return;
+    if (!ACCESSIBILITY.flashes && ['flash', 'ring'].includes(o.type)) return;
+    if (ACCESSIBILITY.particles === 'low' && this.list.length % 2 === 0 && ['dot', 'smoke', 'chunk'].includes(o.type || 'dot')) return;
     // 性能护栏：超出上限丢弃最老粒子
     if (this.list.length >= MAX_PARTICLES) this.list.shift();
     this.list.push({

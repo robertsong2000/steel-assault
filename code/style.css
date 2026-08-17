@@ -35,6 +35,12 @@ body {
   opacity: 0.75;
 }
 
+#bootStatus { font-size: 13px; min-height: 18px; color: #cfe0ff; opacity: 0.88; }
+#bootStatus.error { color: #ff8a7a; }
+#bootStatus.warn { color: #ffcf70; }
+#bootRetry { padding: 6px 12px; border: 1px solid #6d7892; border-radius: 4px; background: #242b3b; color: #e8efff; font: bold 13px monospace; cursor: pointer; }
+#orientationHint { display: none; }
+
 /* ===================== 移动端虚拟按键 ===================== */
 body.touch { touch-action: none; user-select: none; -webkit-user-select: none; }
 body.touch #hint { display: none; }
@@ -60,15 +66,31 @@ body.touch #game { width: min(100vw, 177.8vh); border-width: 1px; }
 .tbtn.on { background: rgba(255, 184, 48, 0.55); border-color: #ffb830; color: #fff; }
 
 /* 左下十字键 */
-.dpad-l { left: 16px;  bottom: 84px; }
-.dpad-r { left: 152px; bottom: 84px; }
-.dpad-u { left: 84px;  bottom: 152px; }
-.dpad-d { left: 84px;  bottom: 16px; }
+.dpad-l { left: calc(16px + env(safe-area-inset-left));  bottom: calc(84px + env(safe-area-inset-bottom)); }
+.dpad-r { left: calc(152px + env(safe-area-inset-left)); bottom: calc(84px + env(safe-area-inset-bottom)); }
+.dpad-u { left: calc(84px + env(safe-area-inset-left));  bottom: calc(152px + env(safe-area-inset-bottom)); }
+.dpad-d { left: calc(84px + env(safe-area-inset-left));  bottom: calc(16px + env(safe-area-inset-bottom)); }
 
 /* 右下动作键 */
-.act-jump { right: 16px;  bottom: 24px; width: 74px; height: 74px; line-height: 68px; font-size: 24px; }
-.act-fire { right: 108px; bottom: 76px; width: 74px; height: 74px; line-height: 68px; font-size: 24px; background: rgba(120, 40, 30, 0.5); }
+.act-jump { right: calc(16px + env(safe-area-inset-right));  bottom: calc(24px + env(safe-area-inset-bottom)); width: 74px; height: 74px; line-height: 68px; font-size: 24px; }
+.act-fire { right: calc(108px + env(safe-area-inset-right)); bottom: calc(76px + env(safe-area-inset-bottom)); width: 74px; height: 74px; line-height: 68px; font-size: 24px; background: rgba(120, 40, 30, 0.5); }
 
 /* 右上系统键 */
-.sys-pause { right: 16px; top: 12px; width: 46px; height: 46px; line-height: 42px; font-size: 18px; }
-.sys-cheat { right: 72px; top: 12px; width: 46px; height: 46px; line-height: 42px; font-size: 15px; background: rgba(40, 90, 50, 0.45); }
+.sys-pause { right: calc(16px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width: 46px; height: 46px; line-height: 42px; font-size: 18px; }
+.sys-cheat { right: calc(72px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width: 46px; height: 46px; line-height: 42px; font-size: 15px; background: rgba(40, 90, 50, 0.45); }
+
+@media (max-width: 700px) and (orientation: portrait) {
+  #orientationHint {
+    display: grid;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    place-content: center;
+    text-align: center;
+    background: rgba(8, 6, 16, 0.94);
+    color: #ffe95a;
+    font: bold 24px/1.6 monospace;
+    padding: 32px;
+  }
+  #orientationHint small { color: #cfe0ff; font-size: 14px; font-weight: normal; }
+}
