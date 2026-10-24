@@ -204,7 +204,7 @@ export function drawSettings(ctx, game) {
   // 音量行：图形化音量条
   VOL_ROWS.forEach(([key, label], i) => {
     const cur = s.sel === i && !s.capture;
-    const y = 118 + i * 40;
+    const y = 90 + i * 34;
     const v = game.audio[key];
     const color = cur ? '#ffe95a' : '#cfe0ff';
     text(ctx, `${cur ? '▶ ' : ''}${label}`, cx - 280, y, { size: 20, color });
@@ -216,9 +216,10 @@ export function drawSettings(ctx, game) {
   const ACCESS_ROWS = [['shake', '屏幕震动'], ['flashes', '闪光/顿帧'], ['particles', '粒子密度'], ['textScale', '文字大小'], ['contrast', '高对比度']];
   ACCESS_ROWS.forEach(([key, label], i) => {
     const cur = s.sel === 3 + i && !s.capture;
+    const y = 194 + i * 24;
     const value = key === 'particles' ? ({ high: '高', low: '低', off: '关' }[game.accessibility[key]]) : key === 'textScale' ? `${Math.round(game.accessibility[key] * 100)}%` : game.accessibility[key] ? '开' : '关';
-    text(ctx, `${cur ? '▶ ' : ''}${label}`, cx - 280, 202 + i * 22, { size: 16, color: cur ? '#ffe95a' : '#cfe0ff' });
-    text(ctx, value, cx + 150, 202 + i * 22, { size: 16, color: cur ? '#ffe95a' : '#8ad0ff' });
+    text(ctx, `${cur ? '▶ ' : ''}${label}`, cx - 280, y, { size: 16, color: cur ? '#ffe95a' : '#cfe0ff' });
+    text(ctx, value, cx + 150, y, { size: 16, color: cur ? '#ffe95a' : '#8ad0ff' });
   });
 
   // 键位行（两列布局）：显示当前主键友好名
@@ -236,7 +237,7 @@ export function drawSettings(ctx, game) {
   // 底部：恢复默认 / 清除进度 / 返回标题
   ['恢复默认键位', '清除战役进度', '返回标题'].forEach((label, i) => {
     const cur = s.sel === 8 + REBIND_ACTIONS.length + i && !s.capture;
-    text(ctx, `${cur ? '▶ ' : ''}${label}`, cx, 440 + i * 24,
+    text(ctx, `${cur ? '▶ ' : ''}${label}`, cx, 432 + i * 27,
       { size: 19, color: cur ? '#ffe95a' : '#cfe0ff', align: 'center' });
   });
   text(ctx, '↑↓ 选择    ←→ 调整/重绑    ENTER 确认    O / ESC 返回',

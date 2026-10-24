@@ -53,9 +53,9 @@ export function loadSave() {
     difficulty: finite(+safeGet('steel_assault_diff'), 1),
     unlocked: finite(+safeGet('steel_assault_unlocked'), 0),
     audio: {
-      master: finite(+safeGet('steel_assault_vol_master'), 100),
-      sfx: finite(+safeGet('steel_assault_vol_sfx'), 100),
-      bgm: finite(+safeGet('steel_assault_vol_bgm'), 100),
+      master: loadNum('steel_assault_vol_master', 100),
+      sfx: loadNum('steel_assault_vol_sfx', 100),
+      bgm: loadNum('steel_assault_vol_bgm', 100),
     },
     keybinds: legacyKeys,
   };

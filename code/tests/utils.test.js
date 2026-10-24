@@ -1,7 +1,34 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { installLocalStorageMock, installThrowingLocalStorage } from './helpers.js';
-import { loadNum, saveVal, clamp, overlap, circleRect } from '../js/utils.js';
+import { loadNum, saveVal, loadSave, clamp, overlap, circleRect } from '../js/utils.js';
+
+describe('utils.loadSave audio migration', () => {
+  beforeEach(() => installLocalStorageMock());
+
+  it('starts with audible defaults and persists them on first launch', () => {
+    assert.deepEqual(loadSave().audio, { master: 100, sfx: 100, bgm: 100 });
+    assert.deepEqual(loadSave().audio, { master: 100, sfx: 100, bgm: 100 });
+  });
+
+  it('preserves legacy volumes including an intentional zero', () => {
+    localStorage.setItem('steel_assault_vol_master', '0');
+    localStorage.setItem('steel_assault_vol_sfx', '40');
+    assert.deepEqual(loadSave().audio, { master: 0, sfx: 40, bgm: 100 });
+  });
+
+  it('uses audible defaults when storage is unavailable', () => {
+    installThrowingLocalStorage();
+    assert.deepEqual(loadSave().audio, { master: 100, sfx: 100, bgm: 100 });
+  });
+
+  it('preserves existing save volume preferences', () => {
+    localStorage.setItem('steel_assault_save', JSON.stringify({
+      version: 1, audio: { master: 0, sfx: 0, bgm: 0 },
+    }));
+    assert.deepEqual(loadSave().audio, { master: 0, sfx: 0, bgm: 0 });
+  });
+});
 
 describe('utils.loadNum / saveVal', () => {
   beforeEach(() => installLocalStorageMock());
